@@ -219,10 +219,11 @@
     &-light&-vertical &-item {
       &-active:not(.@{menu-prefix-cls}-submenu) {
         z-index: 2;
-        background-color: transparent;
+        background-color: fade(@primary-color, 8);
         color: @primary-color;
-        border-right: 0;
+        border-right:3px solid @primary-color;
         border-radius: 0 8px 8px 0;
+        .light-border();
       }
       &-active.@{menu-prefix-cls}-submenu {
         color: @primary-color;
