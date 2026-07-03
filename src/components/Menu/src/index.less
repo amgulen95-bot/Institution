@@ -95,10 +95,12 @@
 
   .@{basic-menu-prefix-cls}-active-indicator {
     position: absolute;
-    top: 0;
+    top: 50%;
     left: 0;
     z-index: 0;
-    height: @header-height;
+    box-sizing: border-box;
+    height: 40px;
+    margin-top: -20px;
     border-bottom: 3px solid #0A5AFF;
     border-radius: 8px !important;
     background: linear-gradient(180deg, rgba(10, 90, 255, 0.08) 0%, rgba(10, 90, 255, 0.00) 100%);
@@ -114,14 +116,15 @@
     .ant-menu-horizontal {
       > .ant-menu-item,
       > .ant-menu-submenu {
+        box-sizing: border-box;
+        margin: 0 8px !important;
+        padding: 12px 16px !important;
+        line-height: 1 !important;
         transition: color 200ms ease !important;
       }
 
       > .ant-menu-item-selected,
       > .ant-menu-submenu-selected {
-        margin: 0 !important;
-        padding: 0 20px !important;
-        line-height: @header-height !important;
         border-bottom: 0 !important;
         border-radius: 0 !important;
         background: transparent !important;
