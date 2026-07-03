@@ -26,6 +26,35 @@
 }
 
 .@{simple-prefix-cls} {
+  &-wrapper {
+    position: relative;
+  }
+
+  &-wrapper--indicator {
+    .@{prefix-cls} {
+      position: relative;
+      z-index: 1;
+    }
+  }
+
+  &-active-indicator {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 0;
+    border-right: 3px solid @primary-color;
+    border-radius: 0 8px 8px 0;
+    background-color: fade(@primary-color, 8);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      height 320ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 160ms ease;
+    will-change: transform, height;
+  }
+
   &-sub-title {
     overflow: hidden;
     transition: all 0.3s;
