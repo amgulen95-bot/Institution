@@ -1,13 +1,13 @@
 <template>
   <div>
-    <a-modal v-model:open="receiptModal.visible" title="请输入用药人收货信息"  centered width="800px" @ok="confirm" :maskClosable="false" destroyOnClose>
+    <a-modal v-model:open="receiptModal.visible" title="请输入用药人收货信息"  centered width="800px" wrapClassName="receipt-info-modal" @ok="confirm" :maskClosable="false" destroyOnClose>
       <div class="padding-lr32">
         <div class="p-16px border-rd-8px bg-[#F9FBFD] flex">
           <img class="w40px h40px border-rd-50%" src="../../../assets//images/userAvatar1.png" alt="">
           <div class="ml8px flex-sub">
             <div class="flex justify-between align-center">
               <div class="flex align-center">
-                <div class="text-16px text-bold">{{patient.Name}}</div>
+                <div class="text-16px">{{patient.Name}}</div>
                 <ManOutlined class="color-[#0A5AFF] ml4px" v-if="patient.Gender==1" />
                 <WomanOutlined class="color-[#f52468] ml4px" v-else />
                 <div class="color-[#858D98] ml8px ">{{patient.Age}}岁</div>
@@ -56,18 +56,13 @@
             <a-input v-model:value="receiptModal.form.ReceiverName" placeholder="请输入收货人姓名"></a-input>
           </a-form-item>
           <a-form-item label="联系电话" name="ReceiverPhone">
-            <a-input v-model:value="receiptModal.form.ReceiverPhone" placeholder="请输入电话号码"></a-input>
+            <a-input v-model:value="receiptModal.form.ReceiverPhone" placeholder="请输入电话号码" :maxlength="11" @input="handleReceiverPhoneInput"></a-input>
           </a-form-item>
           <a-form-item label="省市区" name="RegionCode">
             <a-cascader v-model:value="receiptModal.form.RegionCode" @change="changeRegionData" :options="citiesList" :field-names="{ label: 'name', value: 'code', children: 'children' }" placeholder="请选择" />
           </a-form-item>
           <a-form-item label="详细地址" name="ReceiverAddress">
             <a-input v-model:value="receiptModal.form.ReceiverAddress" placeholder="请输入具体街道/小区/楼牌号"></a-input>
-          </a-form-item>
-          <a-form-item label="支付方式" name="PayChannel">
-            <a-select v-model:value="receiptModal.form.PayChannel" placeholder="请选择支付方式">
-              <a-select-option :value="item.Value" v-for="(item,index) in payChannelList" :key="index">{{item.Name=='线下支付'?'授信余额':item.Name}}</a-select-option>
-            </a-select>
           </a-form-item>
         </a-form>
       </section>
@@ -82,7 +77,6 @@
   import {Cities,AddressAnalysis} from '/@/api/platform/common';
   import {WomanOutlined,ManOutlined} from '@ant-design/icons-vue';
   import { useUserStore } from '@/store/modules/user';
-  import {ConfigApiCtrl} from '/@/api/myy/config';
 
   const userStore = useUserStore();
   const { createMessage } = useMessage()
@@ -96,13 +90,11 @@
   const formIns=ref()
   const address=ref('')
   const citiesList=ref([])
-  const payChannelList=ref([])
   const createDate=ref(formatToDateTime(new Date()))
   const receiptForm={
     ReceiverName:'',
     ReceiverPhone:'',
     ReceiverAddress:'',
-    PayChannel:null,
     RegionCode:[],
     RegionData:[],
   }
@@ -112,10 +104,9 @@
     form:cloneDeep(receiptForm),
     rules: {
       ReceiverName: [{required: true,trigger: 'blur',message: '该项必须填写',type:'string'}],
-      ReceiverPhone: [{required: true,trigger: 'blur',message: '该项必须填写',type:'string'}],
+      ReceiverPhone: [{required: true,trigger: 'blur',validator: validateReceiverPhone}],
       ReceiverAddress: [{required: true,trigger: 'blur',message: '该项必须填写',type:'string'}],
       RegionCode: [{required: true,trigger: 'change',message: '该项必须选择',type:'array'}],
-      PayChannel: [{required: true,trigger: 'change',message: '该项必须选择',type:'number'}],
     }
   })
   
@@ -133,7 +124,6 @@
 
   onMounted(()=>{
     getCities()
-    getPayChannels()
   })
 
     // 获取地址列表
@@ -143,10 +133,23 @@
     })
   }
 
-  const getPayChannels=()=>{
-    ConfigApiCtrl.PayChannels({}).then(data=>{
-      payChannelList.value=data
-    }).catch(() => {}).finally(() => {})
+  const normalizeReceiverPhone = () => {
+    receiptModal.value.form.ReceiverPhone = String(receiptModal.value.form.ReceiverPhone || '').replace(/\D/g, '').slice(0, 11)
+  }
+
+  function validateReceiverPhone(_rule, value) {
+    const phone = String(value || '').trim()
+    if (!phone) {
+      return Promise.reject('该项必须填写')
+    }
+    if (!/^\d{11}$/.test(phone)) {
+      return Promise.reject('请输入11位数字手机号')
+    }
+    return Promise.resolve()
+  }
+
+  const handleReceiverPhoneInput = () => {
+    normalizeReceiverPhone()
   }
 
   const handleIdentify = async () => {
@@ -196,6 +199,7 @@
       const extraData = await response.json()
       receiptModal.value.form.ReceiverName = extraData.name
       receiptModal.value.form.ReceiverPhone = extraData.mobile
+      normalizeReceiverPhone()
       receiptModal.value.form.ReceiverAddress = extraData.street
     } catch (error) {
       createMessage.error('识别或请求异常，请稍后重试')
@@ -219,6 +223,7 @@
     let userInfo=userStore.getUserInfo
     receiptModal.value.form.ReceiverName = userInfo.Clinic.ContactName
     receiptModal.value.form.ReceiverPhone = userInfo.Clinic.ContactPhone
+    normalizeReceiverPhone()
     receiptModal.value.form.ReceiverAddress = userInfo.Clinic.Address
 
     receiptModal.value.form.RegionCode = [userInfo.Clinic.ProvinceCode,userInfo.Clinic.CityCode,userInfo.Clinic.DistrictCode]
@@ -237,6 +242,7 @@
   }
   
   const confirm=()=>{
+    normalizeReceiverPhone()
     formIns.value.validate().then(() => {
       receiptModal.value.loading = true
       const formData = cloneDeep(receiptModal.value.form)
@@ -250,4 +256,25 @@
   }
 </script>
 <style lang="less" scoped>
+:global(.receipt-info-modal .ant-modal-content) {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 14px 36px rgb(32 56 85 / 14%);
+}
+
+:global(.receipt-info-modal .ant-modal-header) {
+  border-bottom: 1px solid #f0f2f5;
+}
+
+:global(.receipt-info-modal .ant-modal-title) {
+  font-weight: 400;
+}
+
+:global(.receipt-info-modal .ant-modal-footer .ant-btn),
+:global(.receipt-info-modal .ant-btn),
+:global(.receipt-info-modal .ant-input),
+:global(.receipt-info-modal .ant-select-selector),
+:global(.receipt-info-modal .ant-cascader-picker) {
+  border-radius: 8px;
+}
 </style>

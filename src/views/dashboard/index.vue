@@ -10,17 +10,17 @@
             快速接诊
           </a-button>
         </div>
-        <a-tabs v-model:activeKey="todayVisit.searchParams.status" centered @change="handleTabChange">
+        <a-tabs class="today-visit-tabs" v-model:activeKey="todayVisit.searchParams.status" @change="handleTabChange">
+          <a-tab-pane :key="null" tab="全部"></a-tab-pane>
           <a-tab-pane :key="1" tab="就诊中"></a-tab-pane>
           <a-tab-pane :key="2" tab="已完成"></a-tab-pane>
-          <a-tab-pane :key="null" tab="全部"></a-tab-pane>
         </a-tabs>
         <div class="overflow-y-scroll scrollbar-none" style="height: calc(100% - 142px);">
           <div class="p16px border border-color-[#F3F4F7] border-rd-8px flex mb12px pointer" :class="visitInfo.index==index?'activeTag':''" v-for="(item,index) in todayVisit.list" @click="seleceVisit(item,index)" :key="index">
             <img class="w52px h52px border-rd-50%" :src="getImageUrl(`userAvatar${(index % 7) + 1}.png`)" alt="">
             <div class="flex-sub ml12px">
               <div class="flex justify-between align-center">
-                <div class="text-16px text-bold">{{item.PatientName||'匿名患者'}}</div>
+                <div class="text-16px">{{item.PatientName||'匿名患者'}}</div>
                 <a-tag :bordered="false" v-if="item.Id" :color="item.VisitStatus==0?'orange':item.VisitStatus==1?'blue':''">{{ClinicVisitStatus.find(p=>p.id==item.VisitStatus)?.name}}</a-tag>
                 <a-tag :bordered="false" v-else color="green">草稿</a-tag>
               </div>
@@ -54,31 +54,40 @@
           <div class="flex justify-between align-center flex-wrap">
             <div class="flex justify-between align-center flex-wrap">
               <a-space class="patient-info-card pt2px pb2px pl16px pr16px bg-[#fff] border-rd-8px mb8px" :size="24">
-                <a-popover v-model:open="patientModal.visible" placement="bottomLeft" trigger="focus" :destroyTooltipOnHide="false" >
+                <a-popover :open="patientModal.visible && patientSearchField === 'name'" placement="bottomLeft" :trigger="[]" overlayClassName="patient-search-popover" :destroyTooltipOnHide="false" >
                   <template #content>
-                    <div class="w650px">
+                    <div class="patient-search-panel">
                       <PatientList :list-data="patientModal.list" :loading="patientModal.loading" @row-click="handleSelectPatient"></PatientList>
                     </div>
                   </template>
-                  <div class="flex align-center">
+                  <div class="flex align-center patient-name-field">
                     <img class="w20px h20px" src="../../assets/images/userImg.png" alt="">
-                    <a-input class="w80px" size="small" v-model:value="patientModal.form.Name" :bordered="false" :disabled="Boolean(patientModal.form.Id)" placeholder="患者姓名" @change="handleInputChange" />
+                    <a-input class="w80px patient-name-input" size="small" v-model:value="patientModal.form.Name" :bordered="false" :disabled="Boolean(patientModal.form.Id)" placeholder="患者姓名" @change="handleInputChange" />
                   </div>
                 </a-popover>
 
-                <a-select v-model:value="patientModal.form.Gender" placeholder="性别" :bordered="false" :disabled="Boolean(patientModal.form.Id)" @select="selectGender">
+                <a-select class="patient-gender-field" v-model:value="patientModal.form.Gender" placeholder="性别" :bordered="false" :disabled="Boolean(patientModal.form.Id)" @select="selectGender">
                   <a-select-option :value="1">男</a-select-option>
                   <a-select-option :value="2">女</a-select-option>
                 </a-select>
-                <div class="flex align-center">
-                  <a-input-number id="inputNumber" class="text-right" size="small" v-model:value="patientModal.form.Age" :controls="false" :bordered="false" :disabled="Boolean(patientModal.form.Id)" placeholder="多少" :min="0" @change="changeAge" />
+                <div class="flex align-center patient-age-field">
+                  <a-input-number id="inputNumber" class="text-right patient-age-input" size="small" v-model:value="patientModal.form.Age" :controls="false" :bordered="false" :disabled="Boolean(patientModal.form.Id)" placeholder="多少" :min="0" :max="105" @change="changeAge" @blur="normalizePatientAge" />
                   <span>岁</span>
                 </div>
-                <div class="flex align-center">
-                  <img class="w20px h20px" src="../../assets/images/phone.png" alt="">
-                  <a-input class="w100px" size="small" v-model:value="patientModal.form.Phone" :bordered="false" :disabled="Boolean(patientModal.form.Id)" placeholder="手机号码" @change="changePhone" />
-                </div>
-                <CloseOutlined v-if="patientModal.form.Id" @click="handleClearPatient" />
+                <a-popover :open="patientModal.visible && patientSearchField === 'phone'" placement="bottomLeft" :trigger="[]" overlayClassName="patient-search-popover" :destroyTooltipOnHide="false" >
+                  <template #content>
+                    <div class="patient-search-panel">
+                      <PatientList :list-data="patientModal.list" :loading="patientModal.loading" @row-click="handleSelectPatient"></PatientList>
+                    </div>
+                  </template>
+                  <div class="flex align-center patient-phone-field">
+                    <img class="w20px h20px" src="../../assets/images/phone.png" alt="">
+                    <a-input class="w100px patient-phone-input" size="small" v-model:value="patientModal.form.Phone" :bordered="false" :disabled="Boolean(patientModal.form.Id)" placeholder="手机号码" :maxlength="11" @change="handlePhoneInputChange" @blur="validatePatientPhone" />
+                  </div>
+                </a-popover>
+                <span class="patient-clear-slot">
+                  <CloseOutlined v-if="patientModal.form.Id" @click="handleClearPatient" />
+                </span>
               </a-space>
               <a-space class="pt8px pb8px pl16px pr16px bg-[#fff] border-rd-8px ml8px mb8px" :size="16">
                 <div class="flex align-center pointer">
@@ -314,7 +323,7 @@
   </div>
 </template>
 <script lang="ts" setup>
-  import { onMounted,ref,createVNode,nextTick} from 'vue';
+  import { onBeforeUnmount,onMounted,ref,createVNode,nextTick} from 'vue';
   import { useMessage } from '/@/hooks/web/useMessage';
   import { Modal } from 'ant-design-vue';
   import { useUserStore } from '@/store/modules/user';
@@ -719,8 +728,45 @@
     todayVisit.value.list[visitInfo.value.index].PatientAge=e
   }
 
+  const normalizePatientAge=()=>{
+    const ageValue = patientModal.value.form.Age
+    if (ageValue === null || ageValue === undefined || ageValue === '') {
+      todayVisit.value.list[visitInfo.value.index].PatientAge = ageValue
+      return
+    }
+    const numberAge = Number(ageValue)
+    if (!Number.isFinite(numberAge) || numberAge < 0) {
+      patientModal.value.form.Age = null
+      todayVisit.value.list[visitInfo.value.index].PatientAge = null
+      return
+    }
+    const limitedAge = Math.min(numberAge, 105)
+    const normalizedAge = limitedAge < 3
+      ? Math.round(limitedAge * 10) / 10
+      : Math.round(limitedAge)
+
+    patientModal.value.form.Age = normalizedAge
+    todayVisit.value.list[visitInfo.value.index].PatientAge = normalizedAge
+  }
+
   const changePhone=(e)=>{
     todayVisit.value.list[visitInfo.value.index].PatientPhone=patientModal.value.form.Phone
+  }
+
+  const normalizePatientPhone=()=>{
+    const phone = String(patientModal.value.form.Phone || '').replace(/\D/g, '').slice(0, 11)
+    patientModal.value.form.Phone = phone
+    todayVisit.value.list[visitInfo.value.index].PatientPhone = phone
+    return phone
+  }
+
+  const validatePatientPhone=()=>{
+    const phone = normalizePatientPhone()
+    if (phone && !/^\d{11}$/.test(phone)) {
+      createMessage.warning('请输入11位数字手机号')
+      return false
+    }
+    return true
   }
 
   const handleTabChange = () => {
@@ -732,33 +778,81 @@
   }
 
 
+  const PATIENT_VISIBLE_PAGE_SIZE = 8
+  const PATIENT_POPOVER_SHOW_DELAY = 120
   let timer: any = null
-  const handleInputChange = () => {
+  let patientSearchRequestKey = 0
+  let patientPopoverTimer: any = null
+  const patientSearchField = ref<'name' | 'phone'>('name')
+  const searchPatientByKeyword = (keyword: string, field: 'name' | 'phone') => {
     clearTimeout(timer)
-    const keyword = patientModal.value.form.Name.trim()
-    todayVisit.value.list[visitInfo.value.index].PatientName=keyword
+    clearTimeout(patientPopoverTimer)
+    patientSearchField.value = field
+    if (field === 'name') {
+      todayVisit.value.list[visitInfo.value.index].PatientName=keyword
+    } else {
+      todayVisit.value.list[visitInfo.value.index].PatientPhone=keyword
+    }
     if (!keyword) {
       patientModal.value.visible = false;
       patientModal.value.list = [];
       return;
     }
     timer = setTimeout(async () => {
+      const currentRequestKey = ++patientSearchRequestKey
+      patientModal.value.visible = false
       patientModal.value.loading=true
       try {
         const data = await PrescriptApiCtrl.SearchPatient({
           page: 1,
-          limit: 10,
+          limit: PATIENT_VISIBLE_PAGE_SIZE,
           keyword: keyword
         });
-        patientModal.value.list = data.Rows || []
-        patientModal.value.visible = patientModal.value.list.length > 0
+        if (currentRequestKey !== patientSearchRequestKey) return
+
+        const rows = data.Rows || []
+        const totalCount = data.TotalItemCount || rows.length
+        let nextRows = rows
+
+        if (totalCount > rows.length) {
+          const fullData = await PrescriptApiCtrl.SearchPatient({
+            page: 1,
+            limit: totalCount,
+            keyword: keyword
+          });
+          if (currentRequestKey !== patientSearchRequestKey) return
+          nextRows = fullData.Rows || []
+        }
+
+        patientModal.value.list = nextRows
+        patientPopoverTimer = setTimeout(() => {
+          if (currentRequestKey === patientSearchRequestKey) {
+            patientModal.value.visible = patientModal.value.list.length > 0
+          }
+        }, PATIENT_POPOVER_SHOW_DELAY)
       } catch (error) {
-        patientModal.value.visible = false
+        if (currentRequestKey === patientSearchRequestKey) {
+          patientModal.value.visible = false
+        }
       } finally {
-        patientModal.value.loading= false
+        if (currentRequestKey === patientSearchRequestKey) {
+          patientModal.value.loading= false
+        }
       }
     }, 300)
   }
+  const handleInputChange = () => {
+    searchPatientByKeyword(patientModal.value.form.Name.trim(), 'name')
+  }
+  const handlePhoneInputChange = () => {
+    const phone = normalizePatientPhone()
+    searchPatientByKeyword(phone, 'phone')
+  }
+
+  onBeforeUnmount(() => {
+    clearTimeout(timer)
+    clearTimeout(patientPopoverTimer)
+  })
 
   const handleSelectPatient = (record: any) => {
     PatientApiCtrl.VisitList({patientId:record.PatientId}).then(data=>{
@@ -801,6 +895,7 @@
   // 保存患者
   const createOrder = async (type) => {  //1暂存处方 2保存患者病历 3提交审方/开方发药
     saveType.value=type
+    normalizePatientAge()
     if(!patientModal.value.form.Name){
       createMessage.warning('请填写患者姓名')
       return
@@ -811,6 +906,9 @@
     }
     if(!patientModal.value.form.Phone){
       createMessage.warning('请填写患者手机号')
+      return
+    }
+    if(!validatePatientPhone()){
       return
     }
     const medicalIsValid = await medicalRef.value?.handleSaveMedical()  //验证病历
@@ -1048,6 +1146,17 @@
   background: #F9FBFD;
   box-shadow: 4px 0 0 0 #0A5AFF inset;
 }
+.today-visit-tabs {
+  :deep(.ant-tabs-nav-list) {
+    width: 100%;
+  }
+
+  :deep(.ant-tabs-tab) {
+    flex: 1;
+    justify-content: center;
+    margin: 0;
+  }
+}
 .patient-info-card {
   border: 1px solid transparent;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -1056,6 +1165,70 @@
   &:focus-within {
     border-color: @primary-color;
     box-shadow: 0 0 0 2px fade(@primary-color, 20%);
+  }
+}
+.patient-name-field {
+  width: 108px;
+  min-width: 108px;
+}
+.patient-info-card .patient-name-input {
+  width: 80px !important;
+}
+.patient-info-card .patient-gender-field {
+  width: 64px;
+  min-width: 64px;
+}
+.patient-age-field {
+  width: 62px;
+  min-width: 62px;
+  font-size: 14px;
+  line-height: 24px;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    font-size: 14px;
+    line-height: 24px;
+  }
+}
+.patient-info-card .patient-age-input {
+  width: 42px !important;
+  min-width: 42px !important;
+
+  :deep(.ant-input-number-input) {
+    text-align: right !important;
+    padding-right: 2px;
+    height: 24px;
+    font-size: 14px;
+    line-height: 24px;
+  }
+}
+.patient-phone-field {
+  width: 128px;
+  min-width: 128px;
+}
+.patient-info-card .patient-phone-input {
+  width: 100px !important;
+}
+.patient-info-card {
+  :deep(.ant-input[disabled]),
+  :deep(.ant-input-number-disabled .ant-input-number-input),
+  :deep(.ant-select-disabled .ant-select-selection-item) {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000;
+  }
+}
+.patient-clear-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  min-width: 14px;
+  color: #c8cdd4;
+
+  :deep(.anticon) {
+    cursor: pointer;
   }
 }
 .visit-type-field,
@@ -1103,5 +1276,30 @@
 }
 .dashboard-system-radius-btn {
   border-radius: 8px !important;
+}
+
+.patient-search-panel {
+  animation: patientSearchPanelIn 0.18s ease-out;
+}
+
+@keyframes patientSearchPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+:global(.patient-search-popover .ant-popover-inner) {
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(32, 48, 75, 0.12);
+}
+
+:global(.patient-search-popover .ant-popover-inner-content) {
+  padding: 8px;
 }
 </style>

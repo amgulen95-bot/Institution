@@ -35,7 +35,7 @@
                   </div>
                 </div>
               </template>
-              <a-textarea size="small" v-model:value="visitForm.ChiefComplaint" :rows="1" :bordered="false" :auto-size="{ minRows: 1}" />
+              <a-textarea size="small" v-model:value="visitForm.ChiefComplaint" :rows="1" :bordered="false" :auto-size="{ minRows: 1}" @focus="clearVisitFieldValidate('ChiefComplaint')" @click="clearVisitFieldValidate('ChiefComplaint')" />
             </a-popover>
           </a-form-item>
         </a-descriptions-item>
@@ -56,7 +56,7 @@
                   </div>
                 </div>
               </template>
-              <a-textarea size="small" v-model:value="visitForm.PresentIllness" :rows="1" :bordered="false" :auto-size="{ minRows: 1}" />
+              <a-textarea size="small" v-model:value="visitForm.PresentIllness" :rows="1" :bordered="false" :auto-size="{ minRows: 1}" @focus="clearVisitFieldValidate('PresentIllness')" @click="clearVisitFieldValidate('PresentIllness')" />
             </a-popover>
           </a-form-item>
         </a-descriptions-item>
@@ -269,7 +269,7 @@
                   <div v-else class="text-center text-gray">输入诊断名称搜索</div>
                 </div>
               </template>
-              <a-textarea size="small" v-model:value="visitForm.Diagnosis" :rows="1" :bordered="false" :auto-size="{ minRows: 1}" @input="handleDiagnosisInput" @focus="handleDiagnosisFocus" />
+              <a-textarea size="small" v-model:value="visitForm.Diagnosis" :rows="1" :bordered="false" :auto-size="{ minRows: 1}" @input="handleDiagnosisInput" @focus="handleDiagnosisFocus" @click="clearVisitFieldValidate('Diagnosis')" />
             </a-popover>
           </a-form-item>
         </a-descriptions-item>
@@ -659,7 +659,12 @@
     visitForm.value.PhysicalExam = items.join('，')
   }
 
+  const clearVisitFieldValidate = (field: string) => {
+    visitFormIns.value?.clearValidate?.([field])
+  }
+
   const handleDiagnosisFocus = () => {
+    clearVisitFieldValidate('Diagnosis')
     const val = visitForm.value.Diagnosis || ''
     if (val && !/[，,]$/.test(val)) {
       visitForm.value.Diagnosis = val + '，'

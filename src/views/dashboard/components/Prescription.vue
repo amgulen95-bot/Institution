@@ -81,15 +81,16 @@
           </div>
 
           <div class="pl16px pr8px pb8px">
-            <div class="flex mt12px flex-wrap gap12px medicinePlan">
-              <a-form-item :name="['list', index, 'DoseCount']" :rules="{required: true,message: '该项必须填写',trigger: 'blur'}">
+            <div class="flex mt12px medicinePlan">
+              <div class="medicine-plan-bar">
+              <a-form-item class="medicine-plan-item medicine-plan-item-count medicine-plan-item-editable" :name="['list', index, 'DoseCount']" :rules="{validator: validateDoseCount, trigger: 'blur'}">
                 <div class="medicine-plan-field medicine-plan-field-count medicine-plan-field-filled border-rd-4px bg-[#F6F8FC] flex align-center text-bold pt5px pb5px pr8px">
-                  <a-input-number :ref="(el) => setMedicinePlanRef(el, index, 'DoseCount')" class="DoseCount" style="width:54px !important;" id="inputNumber" size="small" :controls="false" v-model:value="item.DoseCount" :bordered="false" :min="0" placeholder="1" @focus="selectMedicinePlanNumber" @change="(val) => val && $emit('doseChange')" />
+                  <a-input-number :ref="(el) => setMedicinePlanRef(el, index, 'DoseCount')" class="DoseCount" style="width:32px !important;" id="inputNumber" size="small" :controls="false" v-model:value="item.DoseCount" :bordered="false" :min="1" :precision="0" placeholder="1" @focus="selectMedicinePlanNumber" @blur="normalizeMedicinePlanNumber(index, 'DoseCount', { integer: true, required: true, min: 1 })" @change="(val) => { normalizeMedicinePlanNumber(index, 'DoseCount', { integer: true, required: true, min: 1 }); val && $emit('doseChange') }" />
                   <div>剂</div>
                 </div>
               </a-form-item>
               <template v-if="!item.ProId">
-                <a-form-item class="w160px" :name="['list', index, 'DosageForm']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
+                <a-form-item class="medicine-plan-item medicine-plan-item-dosage medicine-plan-item-editable" :name="['list', index, 'DosageForm']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
                   <div class="medicine-plan-field medicine-plan-field-dosage border-rd-4px bg-[#F6F8FC] flex align-center text-bold pl8px whitespace-nowrap" :class="{'medicine-plan-field-filled': item.DosageForm}">
                     <div>剂型：</div>
                     <a-select :ref="(el) => setMedicinePlanRef(el, index, 'DosageForm')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.DosageForm" placeholder="请选择" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'UseMethod')">
@@ -97,14 +98,14 @@
                     </a-select>
                   </div>
                 </a-form-item>
-                <a-form-item class="w164px" :name="['list', index, 'UseMethod']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
+                <a-form-item class="medicine-plan-item medicine-plan-item-method medicine-plan-item-editable" :name="['list', index, 'UseMethod']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
                   <div class="medicine-plan-field medicine-plan-field-method border-rd-4px bg-[#F6F8FC] flex align-center text-bold whitespace-nowrap" :class="{'medicine-plan-field-filled': item.UseMethod}">
                     <a-select :ref="(el) => setMedicinePlanRef(el, index, 'UseMethod')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.UseMethod" placeholder="用法" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'Frequency')">
                       <a-select-option :value="item.id" v-for="(item,index) in ChineseMedicineUseMethod" :key="index">{{ item.name }}</a-select-option>
                     </a-select>
                   </div>
                 </a-form-item>
-                <a-form-item class="w188px" :name="['list', index, 'Frequency']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
+                <a-form-item class="medicine-plan-item medicine-plan-item-frequency medicine-plan-item-editable" :name="['list', index, 'Frequency']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
                   <div class="medicine-plan-field medicine-plan-field-frequency border-rd-4px bg-[#F6F8FC] flex align-center text-bold pl8px whitespace-nowrap" :class="{'medicine-plan-field-filled': item.Frequency}">
                     <div>每日次数：</div>
                     <a-select :ref="(el) => setMedicinePlanRef(el, index, 'Frequency')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.Frequency" placeholder="请选择" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'EachDose')">
@@ -112,13 +113,13 @@
                     </a-select>
                   </div>
                 </a-form-item>
-                <a-form-item :name="['list', index, 'EachDose']" :rules="{required: true,message: '该项必须填写',trigger: 'blur'}">
+                <a-form-item class="medicine-plan-item medicine-plan-item-each-dose medicine-plan-item-editable" :name="['list', index, 'EachDose']" :rules="{validator: validateEachDose, trigger: 'blur'}">
                   <div class="medicine-plan-field medicine-plan-field-each-dose border-rd-4px bg-[#F6F8FC] flex align-center text-bold pt5px pb5px pl8px" :class="{'medicine-plan-field-filled': item.EachDose}">
                     <div>单次剂量：</div>
-                    <a-input-number :ref="(el) => setMedicinePlanRef(el, index, 'EachDose')" style="width:58px !important;" id="inputNumber" size="small" :controls="false" v-model:value="item.EachDose" :bordered="false" :min="0" placeholder="输入" @focus="selectMedicinePlanNumber" @pressEnter="focusMedicinePlanField(index, 'DoseUnit')" />
+                    <a-input-number :ref="(el) => setMedicinePlanRef(el, index, 'EachDose')" style="width:34px !important;" id="inputNumber" size="small" :controls="false" v-model:value="item.EachDose" :bordered="false" :min="0.01" placeholder="输入" @focus="selectMedicinePlanNumber" @blur="normalizeMedicinePlanNumber(index, 'EachDose', { required: true, min: 0.01 })" @pressEnter="focusMedicinePlanField(index, 'DoseUnit')" />
                   </div>
                 </a-form-item>
-                <a-form-item class="w156px" :name="['list', index, 'DoseUnit']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
+                <a-form-item class="medicine-plan-item medicine-plan-item-unit medicine-plan-item-editable" :name="['list', index, 'DoseUnit']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
                   <div class="medicine-plan-field medicine-plan-field-unit border-rd-4px bg-[#F6F8FC] flex align-center text-bold pl8px whitespace-nowrap" :class="{'medicine-plan-field-filled': item.DoseUnit}">
                     <div>剂量单位：</div>
                     <a-select :ref="(el) => setMedicinePlanRef(el, index, 'DoseUnit')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.DoseUnit" placeholder="请选择" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'TakeTime')">
@@ -126,7 +127,7 @@
                     </a-select>
                   </div>
                 </a-form-item>
-                <a-form-item class="w220px" :name="['list', index, 'TakeTime']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
+                <a-form-item class="medicine-plan-item medicine-plan-item-time medicine-plan-item-editable" :name="['list', index, 'TakeTime']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
                   <div class="medicine-plan-field medicine-plan-field-time border-rd-4px bg-[#F6F8FC] flex align-center text-bold pl8px whitespace-nowrap" :class="{'medicine-plan-field-filled': item.TakeTime}">
                     <div>服用时间：</div>
                     <a-select :ref="(el) => setMedicinePlanRef(el, index, 'TakeTime')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.TakeTime" placeholder="请选择" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'TakeDays')">
@@ -134,26 +135,27 @@
                     </a-select>
                   </div>
                 </a-form-item>
-                <a-form-item>
+                <a-form-item class="medicine-plan-item medicine-plan-item-days medicine-plan-item-editable">
                   <div class="medicine-plan-field medicine-plan-field-days border-rd-4px bg-[#F6F8FC] flex align-center text-bold pt5px pb5px pr8px" :class="{'medicine-plan-field-filled': item.TakeDays}">
-                    <a-input-number :ref="(el) => setMedicinePlanRef(el, index, 'TakeDays')" id="inputNumber" style="width:78px !important;" :controls="false" size="small" v-model:value="item.TakeDays" :bordered="false" placeholder="服药天数(选填)" :min="0" @focus="selectMedicinePlanNumber" />
+                    <div>服药天数：</div>
+                    <a-input-number :ref="(el) => setMedicinePlanRef(el, index, 'TakeDays')" id="inputNumber" style="width:42px !important;" :controls="false" size="small" v-model:value="item.TakeDays" :bordered="false" placeholder="选填" :min="1" :precision="0" @focus="selectMedicinePlanNumber" @blur="normalizeMedicinePlanNumber(index, 'TakeDays', { integer: true, min: 1 })" />
                     <div>天</div>
                   </div>
                 </a-form-item>
               </template>
               <template v-else>
-                <a-form-item class="w160px">
+                <a-form-item class="medicine-plan-item medicine-plan-item-dosage">
                   <div class="medicine-plan-field medicine-plan-field-readonly medicine-plan-field-dosage medicine-plan-field-filled border-rd-4px bg-[#F6F8FC] flex align-center text-bold pl8px whitespace-nowrap">
                     <div>剂型：</div>
                     <span>{{ medicineTypeText(item) }}</span>
                   </div>
                 </a-form-item>
-                <a-form-item class="w164px">
+                <a-form-item class="medicine-plan-item medicine-plan-item-method">
                   <div class="medicine-plan-field medicine-plan-field-readonly medicine-plan-field-method medicine-plan-field-filled border-rd-4px bg-[#F6F8FC] flex align-center text-bold whitespace-nowrap">
                     <span>{{ useMethodText(item) }}</span>
                   </div>
                 </a-form-item>
-                <a-form-item class="w188px" :name="['list', index, 'Frequency']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
+                <a-form-item class="medicine-plan-item medicine-plan-item-frequency medicine-plan-item-editable" :name="['list', index, 'Frequency']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
                   <div class="medicine-plan-field medicine-plan-field-frequency border-rd-4px bg-[#F6F8FC] flex align-center text-bold pl8px whitespace-nowrap" :class="{'medicine-plan-field-filled': item.Frequency}">
                     <div>每日次数：</div>
                     <a-select :ref="(el) => setMedicinePlanRef(el, index, 'Frequency')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.Frequency" placeholder="请选择" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'EachDose')">
@@ -161,19 +163,19 @@
                     </a-select>
                   </div>
                 </a-form-item>
-                <a-form-item :name="['list', index, 'EachDose']" :rules="{required: true,message: '该项必须填写',trigger: 'blur'}">
+                <a-form-item class="medicine-plan-item medicine-plan-item-each-dose medicine-plan-item-editable" :name="['list', index, 'EachDose']" :rules="{validator: validateEachDose, trigger: 'blur'}">
                   <div class="medicine-plan-field medicine-plan-field-each-dose border-rd-4px bg-[#F6F8FC] flex align-center text-bold pt5px pb5px pl8px" :class="{'medicine-plan-field-filled': item.EachDose}">
                     <div>单次剂量：</div>
-                    <a-input-number :ref="(el) => setMedicinePlanRef(el, index, 'EachDose')" style="width:58px !important;" id="inputNumber" size="small" :controls="false" v-model:value="item.EachDose" :bordered="false" :min="0" placeholder="输入" @focus="selectMedicinePlanNumber" @pressEnter="focusMedicinePlanField(index, 'TakeTime')" />
+                    <a-input-number :ref="(el) => setMedicinePlanRef(el, index, 'EachDose')" style="width:34px !important;" id="inputNumber" size="small" :controls="false" v-model:value="item.EachDose" :bordered="false" :min="0.01" placeholder="输入" @focus="selectMedicinePlanNumber" @blur="normalizeMedicinePlanNumber(index, 'EachDose', { required: true, min: 0.01 })" @pressEnter="focusMedicinePlanField(index, 'TakeTime')" />
                   </div>
                 </a-form-item>
-                <a-form-item class="w156px">
+                <a-form-item class="medicine-plan-item medicine-plan-item-unit">
                   <div class="medicine-plan-field medicine-plan-field-readonly medicine-plan-field-unit medicine-plan-field-filled border-rd-4px bg-[#F6F8FC] flex align-center text-bold pl8px whitespace-nowrap">
                     <div>剂量单位：</div>
                     <span>{{ doseUnitText(item) }}</span>
                   </div>
                 </a-form-item>
-                <a-form-item class="w220px" :name="['list', index, 'TakeTime']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
+                <a-form-item class="medicine-plan-item medicine-plan-item-time medicine-plan-item-editable" :name="['list', index, 'TakeTime']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
                   <div class="medicine-plan-field medicine-plan-field-time border-rd-4px bg-[#F6F8FC] flex align-center text-bold pl8px whitespace-nowrap" :class="{'medicine-plan-field-filled': item.TakeTime}">
                     <div>服用时间：</div>
                     <a-select :ref="(el) => setMedicinePlanRef(el, index, 'TakeTime')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.TakeTime" placeholder="请选择" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'TakeDays')">
@@ -181,13 +183,15 @@
                     </a-select>
                   </div>
                 </a-form-item>
-                <a-form-item>
+                <a-form-item class="medicine-plan-item medicine-plan-item-days medicine-plan-item-editable">
                   <div class="medicine-plan-field medicine-plan-field-days border-rd-4px bg-[#F6F8FC] flex align-center text-bold pt5px pb5px pr8px" :class="{'medicine-plan-field-filled': item.TakeDays}">
-                    <a-input-number :ref="(el) => setMedicinePlanRef(el, index, 'TakeDays')" id="inputNumber" style="width:78px !important;" :controls="false" size="small" v-model:value="item.TakeDays" :bordered="false" placeholder="服药天数(选填)" :min="0" @focus="selectMedicinePlanNumber" />
+                    <div>服药天数：</div>
+                    <a-input-number :ref="(el) => setMedicinePlanRef(el, index, 'TakeDays')" id="inputNumber" style="width:42px !important;" :controls="false" size="small" v-model:value="item.TakeDays" :bordered="false" placeholder="选填" :min="1" :precision="0" @focus="selectMedicinePlanNumber" @blur="normalizeMedicinePlanNumber(index, 'TakeDays', { integer: true, min: 1 })" />
                     <div>天</div>
                   </div>
                 </a-form-item>
               </template>
+              </div>
             </div>
             <div class="flex justify-between align-center mt12px" v-if="!item.ProId">
               <div class="prescription-note-field flex-sub border-rd-8px border border-color-[#F3F4F7] flex align-center px12px py7px">
@@ -372,6 +376,51 @@
     input?.select?.()
   }
 
+  const parseMedicinePlanNumber = (value) => {
+    if (value === undefined || value === null || value === '') return null
+    const matched = String(value).match(/\d+(\.\d+)?/)
+    if (!matched) return null
+    const parsed = Number(matched[0])
+    return Number.isFinite(parsed) ? parsed : null
+  }
+
+  const normalizeMedicinePlanValue = (value, options: { integer?: boolean; required?: boolean; min?: number } = {}) => {
+    const parsed = parseMedicinePlanNumber(value)
+    if (parsed === null) return options.required ? null : null
+    const normalized = options.integer ? Math.round(parsed) : parsed
+    const min = options.min ?? 0
+    if (normalized < min) return options.required ? null : null
+    return normalized
+  }
+
+  const normalizeMedicinePlanNumber = (index: number, field: string, options: { integer?: boolean; required?: boolean; min?: number } = {}) => {
+    const item = prescription.value.list[index]
+    if (!item) return
+    item[field] = normalizeMedicinePlanValue(item[field], options)
+  }
+
+  const normalizePrescriptionPlan = (index: number) => {
+    normalizeMedicinePlanNumber(index, 'DoseCount', { integer: true, required: true, min: 1 })
+    normalizeMedicinePlanNumber(index, 'EachDose', { required: true, min: 0.01 })
+    normalizeMedicinePlanNumber(index, 'TakeDays', { integer: true, min: 1 })
+  }
+
+  const validateDoseCount = async (_rule, value) => {
+    if (value === undefined || value === null || value === '') return Promise.reject('该项必须填写')
+    const normalized = normalizeMedicinePlanValue(value, { integer: true, required: true, min: 1 })
+    if (!normalized || normalized < 1) return Promise.reject('该项必须填写正整数')
+    return Promise.resolve()
+  }
+
+  const validateEachDose = async (_rule, value) => {
+    if (value === undefined || value === null || value === '') return Promise.reject('该项必须填写')
+    const normalized = normalizeMedicinePlanValue(value, { required: true, min: 0.01 })
+    if (!normalized || normalized <= 0) return Promise.reject('该项必须填写正数')
+    return Promise.resolve()
+  }
+
+  const normalizeTakeDays = (value) => normalizeMedicinePlanValue(value, { integer: true, min: 1 })
+
   const readonlyMaterials = (item) => {
     return (item.Materials || []).filter(p => p.MaterialId)
   }
@@ -410,14 +459,15 @@
     return {
       DoseCount: 1,
       Frequency: normalizeSelectValue(source.Frequency ?? source.DailyFrequency ?? source.DailyFrequencyId) || findEnumIdByName(ChineseMedicineDailyFrequency, source.DailyFrequencyName),
-      EachDose: source.EachDose ?? source.PerDoseAmount ?? null,
+      EachDose: normalizeMedicinePlanValue(source.EachDose ?? source.PerDoseAmount, { required: false, min: 0.01 }),
       TakeTime: normalizeSelectValue(source.TakeTime ?? source.TakeTimeId) || findEnumIdByName(ChineseMedicineMedicationTime, source.TakeTimeName),
-      TakeDays: source.TakeDays ?? source.CertNumber ?? source.TimeFrame ?? null,
+      TakeDays: normalizeTakeDays(source.TakeDays ?? source.CertNumber ?? source.TimeFrame),
     }
   }
 
   const handleSave = async (index: number) => {
     try {
+      normalizePrescriptionPlan(index)
       await prescriptionFormIns.value.validateFields([
         ['list', index, 'DoseCount'],
         ['list', index, 'DosageForm'],
@@ -577,6 +627,7 @@
     for (const item of validPrescriptions) {
       const realIndex = prescription.value.list.indexOf(item);
       if (realIndex === -1) { continue; }
+      normalizePrescriptionPlan(realIndex)
       const fieldNames = item.ProId
         ? [
           ['list', realIndex, 'DoseCount'],
@@ -633,12 +684,18 @@
   }
 }
 .DoseCount ::v-deep(.ant-input-number-input){
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 22px !important;
   color: red !important;
 }
 .medicinePlan .ant-form-item{
   margin-bottom: 0 !important;
 }
 .medicinePlan :deep(.ant-form-item-has-error) {
+  z-index: 8;
+
+  &.medicine-plan-item,
   .medicine-plan-field {
     border-color: #F3A7A7;
     box-shadow: 0 0 0 2px rgba(224, 36, 36, 0.08), 0 1px 2px rgba(32, 48, 75, 0.04);
@@ -651,40 +708,106 @@
 }
 .medicinePlan {
   align-items: center;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 22px 4px 5px;
+  scrollbar-width: thin;
 
   :deep(.ant-input-number-input) {
     text-align: right;
   }
 
-  .medicine-plan-field {
+  .medicine-plan-bar {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    min-width: max-content;
+    max-width: none;
+    overflow: visible;
+    border: 1px solid #E8EEF7;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #FDFEFF 0%, #F8FAFD 100%);
+    box-shadow: 0 1px 2px rgba(32, 48, 75, 0.04);
+  }
+
+  .medicine-plan-item {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
     min-height: 36px;
-    padding: 6px 10px !important;
-    background: linear-gradient(180deg, #FDFEFF 0%, #F8FAFD 100%) !important;
-    border-radius: 6px;
+    margin-bottom: 0 !important;
+    border: 1px solid transparent;
+    border-left: 1px dashed #AFC2E8;
+    border-radius: 0;
+    background: rgba(253, 254, 255, 0.76);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+
+    &:first-child {
+      border-left-color: transparent;
+      border-radius: 8px 0 0 8px;
+    }
+
+    &:last-child {
+      border-radius: 0 8px 8px 0;
+    }
+
+    &.medicine-plan-item-editable {
+      background: #E1EBFF;
+    }
+
+    &:hover,
+    &:focus-within {
+      z-index: 6;
+      border-color: @primary-color !important;
+      background: #FFFFFF;
+      box-shadow: 0 0 0 2px fade(@primary-color, 16%), 0 4px 10px rgba(32, 48, 75, 0.06);
+    }
+
+    &:not(:first-child):hover,
+    &:not(:first-child):focus-within {
+      border-radius: 0;
+    }
+
+    &:last-child:hover,
+    &:last-child:focus-within {
+      border-radius: 0 8px 8px 0;
+    }
+  }
+
+  .medicine-plan-field {
+    width: 100%;
+    min-height: 34px;
+    padding: 5px 8px !important;
+    background: transparent !important;
+    border-radius: 0;
     color: #313947;
     font-size: 14px;
     font-weight: 500 !important;
     line-height: 22px;
-    border: 1px solid #E8EEF7;
-    box-shadow: 0 1px 2px rgba(32, 48, 75, 0.04);
+    border: 0;
+    box-shadow: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 
     &:hover,
     &:focus-within {
-      border-color: @primary-color;
-      background: #FFFFFF !important;
-      box-shadow: 0 0 0 2px fade(@primary-color, 16%), 0 4px 10px rgba(32, 48, 75, 0.06);
+      background: transparent !important;
+      box-shadow: none;
     }
 
     > div {
       font-size: 14px;
       font-weight: 500 !important;
       line-height: 22px;
+      white-space: nowrap;
+      flex: 0 0 auto;
     }
 
     :deep(.ant-select) {
       flex: 1;
-      min-width: 0;
+      min-width: 72px;
     }
 
     :deep(.ant-select-selector),
@@ -703,6 +826,7 @@
       font-size: 14px;
       font-weight: 500 !important;
       line-height: 24px !important;
+      padding-right: 18px;
     }
 
     :deep(.ant-select-arrow),
@@ -721,47 +845,118 @@
 
     &:hover,
     &:focus-within {
-      border-color: #DDE7F4;
-      background: linear-gradient(180deg, #FDFEFF 0%, #F8FAFD 100%) !important;
-      box-shadow: 0 1px 2px rgba(32, 48, 75, 0.04);
+      background: transparent !important;
+      box-shadow: none;
     }
 
     span {
+      min-width: 0;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 
+  .medicine-plan-item-count {
+    width: 80px;
+  }
+
+  .medicine-plan-item-dosage {
+    width: 180px;
+  }
+
+  .medicine-plan-item-method {
+    width: 138px;
+  }
+
+  .medicine-plan-item-frequency {
+    width: 208px;
+  }
+
+  .medicine-plan-item-each-dose {
+    width: 134px;
+  }
+
+  .medicine-plan-item-unit {
+    width: 164px;
+  }
+
+  .medicine-plan-item-time {
+    width: 240px;
+  }
+
+  .medicine-plan-item-days {
+    width: 156px;
+  }
+
   .medicine-plan-field-count {
-    min-width: 72px;
+    min-width: 0;
+    padding-right: 12px !important;
   }
 
   .medicine-plan-field-dosage {
-    min-width: 160px;
+    min-width: 0;
   }
 
   .medicine-plan-field-method {
-    min-width: 164px;
+    min-width: 0;
   }
 
   .medicine-plan-field-frequency {
-    min-width: 188px;
+    min-width: 0;
   }
 
   .medicine-plan-field-each-dose {
-    min-width: 152px;
+    min-width: 0;
   }
 
   .medicine-plan-field-unit {
-    min-width: 156px;
+    min-width: 0;
+
+    :deep(.ant-select) {
+      min-width: 70px;
+    }
+  }
+
+  :deep(.ant-form-item-explain) {
+    position: absolute;
+    top: -20px;
+    right: auto;
+    left: 8px;
+    z-index: 20;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  :deep(.ant-form-item-explain-error) {
+    max-width: 112px;
+    padding: 0 5px;
+    overflow: hidden;
+    border: 1px solid rgba(243, 167, 167, 0.58);
+    border-radius: 4px;
+    background: rgba(255, 247, 247, 0.96);
+    color: #D14343;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 16px;
+    text-overflow: ellipsis;
+    box-shadow: 0 2px 6px rgba(209, 67, 67, 0.08);
+  }
+
+  .medicine-plan-item-count :deep(.ant-form-item-explain-error),
+  .medicine-plan-item-each-dose :deep(.ant-form-item-explain-error) {
+    max-width: 88px;
   }
 
   .medicine-plan-field-time {
-    min-width: 220px;
+    min-width: 0;
   }
 
   .medicine-plan-field-days {
-    min-width: 136px;
+    min-width: 0;
   }
 }
 
@@ -800,6 +995,9 @@
 }
 
 :global(.medicine-plan-select-popup) {
+  width: max-content !important;
+  min-width: 240px !important;
+  max-width: none !important;
   padding: 5px;
   border: 1px solid #E8EEF7;
   border-radius: 8px;
@@ -809,8 +1007,9 @@
 }
 
 :global(.medicine-plan-select-popup .ant-select-item-option-content) {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
 }
 
 :global(.medicine-plan-select-popup .rc-virtual-list-holder),

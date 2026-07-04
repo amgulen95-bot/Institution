@@ -29,7 +29,7 @@
             </a-col>
             <a-col :span="12">
               <a-form-item label="手机号码" name="Phone">
-                <a-input v-model:value="patientModal.form.Phone" placeholder="请填写"></a-input>
+                <a-input v-model:value="patientModal.form.Phone" placeholder="请填写" :maxlength="11" @input="handlePhoneInput" @blur="validatePhoneField"></a-input>
               </a-form-item>
             </a-col>
             <a-col :span="12">
@@ -123,7 +123,7 @@
       Name: [{required: true,message: '该项必须填写',type:'string'}],
       Gender: [{required: true,message: '该项必须填写',type:'number'}],
       Age: [{required: true,validator: validateAge}],
-      Phone: [{required: true,message: '该项必须填写',type:'string'}],
+      Phone: [{required: true,validator: validatePhone}],
       IDCard: [{validator: validateIdCard}],
     }
   })
@@ -179,6 +179,35 @@
       return Promise.reject('3岁及以上请填写整数')
     }
     return Promise.resolve()
+  }
+
+  const normalizePhone = () => {
+    patientModal.value.form.Phone = String(patientModal.value.form.Phone || '').replace(/\D/g, '').slice(0, 11)
+  }
+
+  function validatePhone(_rule, value) {
+    const phone = String(value || '').trim()
+    if (!phone) {
+      return Promise.reject('该项必须填写')
+    }
+    if (!/^\d{11}$/.test(phone)) {
+      return Promise.reject('请输入11位数字手机号')
+    }
+    return Promise.resolve()
+  }
+
+  const handlePhoneInput = () => {
+    normalizePhone()
+    nextTick(() => {
+      formIns.value?.clearValidate?.(['Phone'])
+    })
+  }
+
+  const validatePhoneField = () => {
+    normalizePhone()
+    nextTick(() => {
+      formIns.value?.validateFields?.(['Phone']).catch(() => {})
+    })
   }
 
   const isValidIdCard = (idCard) => {
@@ -262,6 +291,7 @@
   }
   
   const confirm=()=>{
+    normalizePhone()
     syncBirthDateFromIdCard()
     formIns.value.validate().then(() => {
       patientModal.value.loading = true

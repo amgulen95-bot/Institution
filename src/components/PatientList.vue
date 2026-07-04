@@ -1,95 +1,82 @@
 <template>
   <div>
-    <a-table :data-source="table.list"
-              :columns="columns"
-              row-key="Id"
-              :loading="loadingState"
-              :pagination="pagination"
-              :scroll="{x:550,y:600}"
-              :customRow="customRow">
+    <a-table
+      class="patient-list-table"
+      :data-source="table.list"
+      :columns="columns"
+      row-key="Id"
+      :loading="false"
+      :pagination="false"
+      :scroll="{ y: 320 }"
+      size="small"
+      :customRow="customRow"
+    >
       <template #bodyCell="{ column, record }">
         <template v-if="column.dataIndex == 'Gender'">
-          <span>{{record.Gender==1?'男':'女'}}</span>
+          <span>{{ record.Gender == 1 ? '男' : '女' }}</span>
         </template>
         <template v-if="column.dataIndex == 'LastVisitTime'">
-          <span class="ellipsis">{{record.LastVisitTime?record.LastVisitTime:'--'}}</span>
+          <span class="ellipsis">{{ record.LastVisitTime ? record.LastVisitTime : '--' }}</span>
         </template>
       </template>
     </a-table>
   </div>
 </template>
+
 <script lang="ts" setup>
-  import { ref,reactive,watch} from 'vue';
-  import {PrescriptApiCtrl} from '/@/api/myy/prescript';
+  import { ref, watch } from 'vue';
 
   const props = defineProps({
     listData: Array,
-    loading: Boolean
-  })
+    loading: Boolean,
+  });
+
   const emit = defineEmits<{
     (e: 'data-change', hasData: boolean): void;
     (e: 'row-click', record: any): void;
   }>();
-  const loadingState = ref(false)
-  const table = ref({ list: [] as any[] })
 
-  watch(() => props.listData, (newVal) => {
-    if (newVal) table.value.list = newVal;
-  }, { immediate: true })
+  const table = ref({ list: [] as any[] });
 
-  watch(() => props.loading, (val) => {
-    loadingState.value = val
-  }, { immediate: true })
-
-  const columns=ref([
-    {title: '姓名',dataIndex: 'Name',width: 140},
-    {title: '性别',dataIndex: 'Gender',width: 80},
-    {title: '年龄',dataIndex: 'Age',width: 80},
-    {title: '手机号',dataIndex: 'Phone',width: 140},
-    {title: '上次就诊',dataIndex: 'LastVisitTime',width: 160},
-  ])
-
-  const pagination = reactive({
-    total: 0,
-    current: 1,
-    pageSize: 10,
-    showQuickJumper:true,
-    showSizeChanger: true,
-    showTotal: (total) => `共 ${total} 条`, 
-    onShowSizeChange: (current,size) => {
-      pagination.pageSize = size
-      pagination.current = 1
-      getRenewalList()
+  watch(
+    () => props.listData,
+    (newVal) => {
+      if (newVal) table.value.list = newVal;
     },
-    onChange: (page) => {
-      pagination.current = page
-      getRenewalList()
-    }
-  })
+    { immediate: true },
+  );
 
-  const getRenewalList = async (isSearch = false) => {
-    if (isSearch){
-      pagination.current = 1
-    }
-    loadingState.value = true
-    try {
-      const data = await PrescriptApiCtrl.SearchPatient({
-        page: pagination.current,
-        limit: pagination.pageSize,
-        keyword: ''
-      });
-      table.value.list = data.Rows || []
-      pagination.total = data.TotalItemCount
-    } catch (error) {} finally {loadingState.value = false}
-  }
+  const columns = ref([
+    { title: '姓名', dataIndex: 'Name', width: 140 },
+    { title: '性别', dataIndex: 'Gender', width: 80, align: 'center' },
+    { title: '年龄', dataIndex: 'Age', width: 80, align: 'center' },
+    { title: '手机号', dataIndex: 'Phone', width: 140, align: 'center' },
+    { title: '上次就诊', dataIndex: 'LastVisitTime', width: 160 },
+  ]);
 
-  const customRow = (record: any, index: number) => {
+  const customRow = (record: any) => {
     return {
-      onClick: (event: MouseEvent) => {
-        emit('row-click', record)
-      }
-    }
-  }
+      onClick: () => {
+        emit('row-click', record);
+      },
+    };
+  };
 </script>
+
 <style lang="less" scoped>
+.patient-list-table {
+  width: 700px;
+
+  :deep(.ant-table-thead > tr > th) {
+    background: #FFFDEC !important;
+  }
+
+  :deep(.ant-table-tbody > tr.ant-table-row:hover > td) {
+    background: #EEF5FF !important;
+  }
+
+  :deep(.ant-table-cell) {
+    transition: background-color 0.18s ease;
+  }
+}
 </style>
