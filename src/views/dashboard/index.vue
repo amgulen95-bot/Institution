@@ -394,7 +394,7 @@
     Name:'',
     Advice:'',
     Remark:'',
-    DoseCount:null,
+    DoseCount:1,
     DosageForm:'',
     UseMethod:null,
     Frequency:'',

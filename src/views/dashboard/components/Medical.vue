@@ -10,13 +10,13 @@
         </a-tooltip>
       </a-space>
     </div>
-    <a-form :model="visitForm" :rules="visitRules" ref="visitFormIns" class="bg-[#fdfcfa] medicalPanel">
-      <a-descriptions bordered :column="1" size="small" :labelStyle="{width:'100px',backgroundColor:'#fdfcfa',}" :contentStyle="{padding:'2px 12px'}">
+    <a-form :model="visitForm" :rules="visitRules" ref="visitFormIns" class="bg-[#FFFDEC] medicalPanel" :validateTrigger="[]">
+      <a-descriptions bordered :column="1" size="small" :labelStyle="{width:'100px',backgroundColor:'#FFFDEC',}" :contentStyle="{padding:'2px 12px'}">
         <a-descriptions-item label="主诉">
           <a-form-item name="ChiefComplaint">
             <a-popover placement="bottomLeft" v-model:open="quickPanel.ChiefComplaint.visible" trigger="click">
               <template #content>
-                <div class="w900px" @mousedown.prevent>
+                <div class="w900px" @mousedown.prevent @mouseleave="quickPanel.ChiefComplaint.visible=false">
                   <div v-for="(item,index) in quickPanel.ChiefComplaint.list" :key="index">
                     <div class="flex align-center flex-wrap gap12px">
                       <div class="pointerTag" v-for="(p,i) in item.list1" :key="i" @click="handleChiefComplaintListClick(p)">{{ p }}</div>
@@ -29,7 +29,7 @@
                   <div class="flex align-center flex-wrap gap12px">
                     <div class="pointerTag" v-for="(item,index) in quickPanel.ChiefComplaint.time" :key="index" @click="handleChiefComplaintTimeClick(item)">{{ item }}</div>
                   </div>
-                  <div class="bg-[#fafbfc] text-theme p8px text-center mt12px pointer" @click="quickPanel.ChiefComplaint.visible=false">
+                  <div class="medical-quick-close bg-[#fafbfc] text-theme p8px text-center mt12px pointer" @click="quickPanel.ChiefComplaint.visible=false">
                     <CloseCircleOutlined />
                     <span class="ml4px">关闭</span>
                   </div>
@@ -43,14 +43,14 @@
           <a-form-item name="PresentIllness">
             <a-popover placement="bottomLeft" v-model:open="quickPanel.PresentIllness.visible" trigger="click">
               <template #content>
-                <div class="w900px" @mousedown.prevent>
+                <div class="w900px" @mousedown.prevent @mouseleave="quickPanel.PresentIllness.visible=false">
                   <div v-for="(item,index) in quickPanel.PresentIllness.list" :key="index">
                     <div class="flex align-center flex-wrap gap12px mb16px">
                       <div class="text-bold">{{ item.category }}</div>
                       <div class="pointerTag" v-for="(p,i) in item.list" :key="i" @click="handlePresentIllnessListClick(p)">{{ p }}</div>
                     </div>
                   </div>
-                  <div class="bg-[#fafbfc] text-theme p8px text-center mt12px pointer" @click="quickPanel.PresentIllness.visible=false">
+                  <div class="medical-quick-close bg-[#fafbfc] text-theme p8px text-center mt12px pointer" @click="quickPanel.PresentIllness.visible=false">
                     <CloseCircleOutlined />
                     <span class="ml4px">关闭</span>
                   </div>
@@ -64,7 +64,7 @@
           <a-form-item name="PastHistory">
             <a-popover placement="bottomLeft" v-model:open="quickPanel.PastHistory.visible" trigger="click">
               <template #content>
-                <div class="w900px" @mousedown.prevent>
+                <div class="w900px" @mousedown.prevent @mouseleave="quickPanel.PastHistory.visible=false">
                   <div v-for="(item,index) in quickPanel.PastHistory.list" :key="index">
                     <div class="flex align-center flex-wrap gap12px">
                       <div class="pointerTag" v-for="(p,i) in item.list1" :key="i" @click="handlePastHistoryListClick(p)">{{ p }}</div>
@@ -78,7 +78,7 @@
                     <div class="text-bold">既往有</div>
                     <div class="pointerTag" v-for="(item,index) in quickPanel.PastHistory.past" :key="index" @click="handlePastHistoryPastClick(item)">{{ item }}</div>
                   </div>
-                  <div class="bg-[#fafbfc] text-theme p8px text-center mt12px pointer" @click="quickPanel.PastHistory.visible=false">
+                  <div class="medical-quick-close bg-[#fafbfc] text-theme p8px text-center mt12px pointer" @click="quickPanel.PastHistory.visible=false">
                     <CloseCircleOutlined />
                     <span class="ml4px">关闭</span>
                   </div>
@@ -92,7 +92,7 @@
           <a-form-item name="AllergyHistory">
             <a-popover placement="bottomLeft" v-model:open="quickPanel.AllergyHistory.visible" trigger="click">
               <template #content>
-                <div class="w900px" @mousedown.prevent>
+                <div class="w900px" @mousedown.prevent @mouseleave="quickPanel.AllergyHistory.visible=false">
                   <div class="flex align-center flex-wrap gap12px">
                     <div class="pointerTag" v-for="(item,index) in quickPanel.AllergyHistory.deny" :key="index" @click="handleAllergyHistoryDenyClick(item)">{{ item }}</div>
                   </div>
@@ -109,7 +109,7 @@
                       <div class="pointerTag" v-for="(p,i) in item.list3" :key="i" @click="handleAllergyHistoryListClick(p)">{{ p }}</div>
                     </div>
                   </div>
-                  <div class="bg-[#fafbfc] text-theme p8px text-center mt12px pointer" @click="quickPanel.AllergyHistory.visible=false">
+                  <div class="medical-quick-close bg-[#fafbfc] text-theme p8px text-center mt12px pointer" @click="quickPanel.AllergyHistory.visible=false">
                     <CloseCircleOutlined />
                     <span class="ml4px">关闭</span>
                   </div>
@@ -123,7 +123,7 @@
           <a-form-item name="PersonalHistory">
             <a-popover placement="bottomLeft" v-model:open="quickPanel.PersonalHistory.visible" trigger="click">
               <template #content>
-                <div class="w900px" @mousedown.prevent>
+                <div class="w900px" @mousedown.prevent @mouseleave="quickPanel.PersonalHistory.visible=false">
                   <div v-for="(item,index) in quickPanel.PersonalHistory.list" :key="index">
                     <div class="flex align-center flex-wrap gap12px">
                       <div class="pointerTag" v-for="(p,i) in item.list1" :key="i" @click="handlePersonalHistoryListClick(p)">{{ p }}</div>
@@ -132,7 +132,7 @@
                       <div class="pointerTag" v-for="(p,i) in item.list2" :key="i" @click="handlePersonalHistoryListClick(p)">{{ p }}</div>
                     </div>
                   </div>
-                  <div class="bg-[#fafbfc] text-theme p8px text-center mt12px pointer" @click="quickPanel.PersonalHistory.visible=false">
+                  <div class="medical-quick-close bg-[#fafbfc] text-theme p8px text-center mt12px pointer" @click="quickPanel.PersonalHistory.visible=false">
                     <CloseCircleOutlined />
                     <span class="ml4px">关闭</span>
                   </div>
@@ -146,7 +146,7 @@
           <a-form-item name="PhysicalExam">
             <a-popover placement="bottomLeft" v-model:open="quickPanel.PhysicalExam.visible" trigger="click">
               <template #content>
-                <div class="w900px" @mousedown.prevent>
+                <div class="w900px" @mousedown.prevent @mouseleave="quickPanel.PhysicalExam.visible=false">
                   <a-tabs v-model:activeKey="activeKey" size="small">
                     <a-tab-pane :key="1" tab="体征">
                       <div class="flex align-center flex-wrap gap12px">
@@ -241,7 +241,7 @@
                       </div>
                     </a-tab-pane>
                   </a-tabs>
-                  <div class="bg-[#fafbfc] text-theme p8px text-center mt12px pointer" @click="quickPanel.PhysicalExam.visible=false">
+                  <div class="medical-quick-close bg-[#fafbfc] text-theme p8px text-center mt12px pointer" @click="quickPanel.PhysicalExam.visible=false">
                     <CloseCircleOutlined />
                     <span class="ml4px">关闭</span>
                   </div>
@@ -260,9 +260,9 @@
           <a-form-item name="Diagnosis">
             <a-popover placement="bottomLeft" v-model:open="diagnosisPopover.visible" trigger="click">
               <template #content>
-                <div class="w400px" @mousedown.prevent>
+                <div class="w400px" @mousedown.prevent @mouseleave="diagnosisPopover.visible=false">
                   <div class="max-h300px overflow-y-auto" v-if="diagnosisPopover.list.length">
-                    <div class="pointer p4px hover-bg-[#e1ebff]" v-for="(item,index) in diagnosisPopover.list" :key="index" @click="handleDiagnosisSelect(item)">{{ item }}</div>
+                    <div class="medical-option-item pointer p4px hover-bg-[#e1ebff]" v-for="(item,index) in diagnosisPopover.list" :key="index" @click="handleDiagnosisSelect(item)">{{ item }}</div>
                   </div>
                   <div v-else-if="diagnosisPopover.searchKey && !diagnosisPopover.loading" class="text-center text-gray">无匹配结果</div>
                   <div v-else-if="diagnosisPopover.loading" class="text-center text-gray">搜索中...</div>
@@ -409,13 +409,9 @@
     DoctorRemark:'',
   })
   const visitRules=ref({
-    ChiefComplaint: [{required: true,trigger: 'change',message: '该项必须填写',type:'string'}],
-    PresentIllness: [{required: true,trigger: 'change',message: '该项必须填写',type:'string'}],
-    PastHistory: [{required: true,trigger: 'change',message: '该项必须填写',type:'string'}],
-    AllergyHistory: [{required: true,trigger: 'change',message: '该项必须填写',type:'string'}],
-    PersonalHistory: [{required: true,trigger: 'change',message: '该项必须填写',type:'string'}],
-    TCMDiagnosis: [{required: true,trigger: 'change',message: '该项必须填写',type:'string'}],
-    Diagnosis: [{required: true,trigger: 'change',message: '该项必须填写',type:'string'}],
+    ChiefComplaint: [{required: true,message: '该项必须填写',type:'string'}],
+    PresentIllness: [{required: true,message: '该项必须填写',type:'string'}],
+    Diagnosis: [{required: true,message: '该项必须填写',type:'string'}],
   })
   const callTemplateVisible=ref(false)
   const medicalVisible=ref(false)
@@ -715,10 +711,33 @@
 .MedicalPage .ant-form-item{
   margin-bottom: 0 !important;
 }
+.MedicalPage :deep(.ant-form-item){
+  position: relative;
+}
+.MedicalPage :deep(.ant-form-item-with-help){
+  margin-bottom: 0 !important;
+}
+.MedicalPage :deep(.ant-form-item-explain){
+  position: absolute;
+  left: 0;
+  top: 100%;
+  z-index: 4;
+  min-height: auto;
+  line-height: 16px;
+  font-size: 12px;
+  pointer-events: none;
+}
+.MedicalPage :deep(.ant-form-item-explain-error){
+  display: inline-block;
+  padding: 0 4px;
+  background: #fff;
+  border-radius: 4px;
+  white-space: nowrap;
+}
 .pointerTag{
   cursor: pointer;
   padding: 2px 4px;
-  border-radius: 2px;
+  border-radius: 4px;
 }
 .pointerTag:hover{
   background-color: #e1ebff;
@@ -729,19 +748,41 @@
 }
 .MedicalPage :deep(.ant-descriptions-item-label){
   border-inline-end:none !important;
+  color: #5F6A7A !important;
+  font-weight: 400;
 }
 .MedicalPage :deep(.ant-descriptions-item-content){
   border-inline-start:1px solid #f0f0f0;
 }
 .ant-descriptions-item-content {
-  transition: border 0.2s;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   border: 1px solid #f0f0f0 !important;
 }
 .MedicalPage :deep(.ant-descriptions-item-content:hover),
 .MedicalPage :deep(.ant-descriptions-item-content:focus-within){
   border: 1px solid #0A5AFF !important;
+  box-shadow: 0 0 0 2px fade(@primary-color, 16%), 0 4px 10px rgba(32, 48, 75, 0.06);
 }
-.medicalPanel .ant-input{
-  font-weight: bold !important;
+.medicalPanel :deep(.ant-input){
+  font-weight: 400 !important;
+  color: #000000 !important;
+}
+.medical-option-item {
+  border-radius: 4px;
+  padding: 7px 8px !important;
+  color: #000000;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 22px;
+  border-bottom: 1px dashed #E8EEF7;
+}
+.medical-option-item:last-child {
+  border-bottom: none;
+}
+.medical-quick-close {
+  border-radius: 4px;
+}
+.medical-quick-close:hover {
+  background-color: #EEF5FF !important;
 }
 </style>

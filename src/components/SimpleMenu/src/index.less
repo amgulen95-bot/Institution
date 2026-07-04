@@ -26,6 +26,68 @@
 }
 
 .@{simple-prefix-cls} {
+  &-wrapper {
+    position: relative;
+  }
+
+  &-wrapper--indicator {
+    .@{prefix-cls} {
+      position: relative;
+      z-index: 1;
+      background-color: transparent !important;
+    }
+
+    .@{prefix-cls}-light.@{prefix-cls}-vertical .@{prefix-cls}-item-active:not(.@{prefix-cls}-submenu) {
+      border-right-color: transparent !important;
+      background-color: transparent !important;
+    }
+
+    .@{prefix-cls}-light.@{prefix-cls}-vertical.@{prefix-cls}-collapse > li.@{prefix-cls}-item-active {
+      background-color: transparent !important;
+
+      &::before {
+        display: none !important;
+      }
+    }
+
+    .@{prefix-cls}-dark.@{prefix-cls}-vertical .@{prefix-cls}-item-active:not(.@{prefix-cls}-submenu) {
+      background-color: transparent !important;
+    }
+
+    .@{prefix-cls}-dark.@{prefix-cls}-vertical.@{prefix-cls}-collapse > li.@{prefix-cls}-item-active {
+      background-color: transparent !important;
+
+      &::before {
+        display: none !important;
+      }
+    }
+
+    .@{prefix-cls}-light ~ .@{simple-prefix-cls}-active-indicator {
+      border-right: 3px solid @primary-color;
+      border-radius: 0 8px 8px 0;
+      background-color: fade(@primary-color, 8);
+    }
+
+    .@{prefix-cls}-dark ~ .@{simple-prefix-cls}-active-indicator {
+      background-color: @primary-color;
+    }
+  }
+
+  &-active-indicator {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+      height 360ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 160ms ease;
+    will-change: transform, height;
+  }
+
   &-sub-title {
     overflow: hidden;
     transition: all 0.3s;

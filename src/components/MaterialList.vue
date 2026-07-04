@@ -1,16 +1,20 @@
 <template>
   <div>
-    <a-table :data-source="table.list"
+    <a-table class="material-list-table"
+              :data-source="props.listData"
               :columns="columns"
               row-key="Id"
-              :loading="loading"
-              :pagination="pagination"
-              :scroll="{x:550,y:600}"
+              :loading="false"
+              :pagination="false"
+              :scroll="{x:550,y:320}"
               size="small"
               :customRow="customRow">
       <template #bodyCell="{ column, record }">
+        <template v-if="column.dataIndex == 'Stock'">
+          <span class="material-list-cell-right">{{record.Stock}}</span>
+        </template>
         <template v-if="column.dataIndex == 'Price'">
-          <span>{{record.Price}}/{{record.DanWei}}</span>
+          <span class="material-list-cell-right">{{record.Price}}/{{record.DanWei}}</span>
         </template>
       </template>
     </a-table>
@@ -42,8 +46,8 @@
   const columns=ref([
     {title: '药材名',dataIndex: 'Name',width: 140},
     {title: '规格',dataIndex: 'DanWei',width: 60},
-    {title: '库存',dataIndex: 'Stock',width: 100},
-    {title: '价格',dataIndex: 'Price',width: 100},
+    {title: '库存',dataIndex: 'Stock',width: 100,align: 'right'},
+    {title: '价格',dataIndex: 'Price',width: 100,align: 'right'},
     {title: '产地厂家',dataIndex: 'Factory',width: 180}
   ])
 
@@ -78,4 +82,18 @@
   }
 </script>
 <style lang="less" scoped>
+.material-list-table {
+  :deep(.ant-table-thead > tr > th) {
+    background: #FFFDEC !important;
+  }
+
+  :deep(.ant-table-tbody > tr.ant-table-row:hover > td) {
+    background: #EEF5FF !important;
+  }
+
+  .material-list-cell-right {
+    display: block;
+    text-align: right;
+  }
+}
 </style>
