@@ -209,6 +209,8 @@
     },
   });
   const userStore = useUserStore()
+  const route = useRoute();
+  const router = useRouter();
   const ClinicRole=ref(1)
   const { createMessage} = useMessage()
   const go = useGo();
@@ -223,6 +225,7 @@
   const orderCode=ref('')
   const paymentVisible=ref(false)
   const refundVisible=ref(false)
+  const autoPayHandled=ref(false)
   const searchParams = ref({
     Date:[],
     keyword:'',
@@ -287,6 +290,9 @@
     ClinicRole.value=userStore.getUserInfo.Doctor.ClinicRole
     if(ClinicRole.value==2){
       searchParams.value.docId=userStore.getUserInfo.Doctor.DoctorId
+    }
+    if(props.chargeStatus==0&&route.query.orderCode){
+      searchParams.value.keyword=String(route.query.orderCode)
     }
     getBasicEnum()
     getStaffList()
@@ -370,7 +376,7 @@
       query.endTime = searchParams.value.Date[1]||'',
       delete query.Date
     }
-    ChargeApiCtrl.ChargeList({
+    return ChargeApiCtrl.ChargeList({
       page:pagination.current,
       limit:pagination.pageSize,
       ...query
@@ -378,11 +384,36 @@
       table.value.loading=false
       table.value.list=data.Rows
       pagination.total=data.TotalItemCount
+      handleAutoOpenPayment()
+      return data
     }).catch(() => {}).finally(() => { table.value.loading=false })
   }
 
-  const route = useRoute();
-  const router = useRouter();
+  const getRouteOrderCode=()=>{
+    return String(route.query.orderCode || '')
+  }
+
+  const shouldAutoPay=()=>{
+    return props.chargeStatus==0 && route.query.autoPay=='1' && !!getRouteOrderCode()
+  }
+
+  const handleAutoOpenPayment=()=>{
+    if(autoPayHandled.value || !shouldAutoPay()){
+      return
+    }
+    autoPayHandled.value=true
+    const targetOrderCode = getRouteOrderCode()
+    const targetRecord = table.value.list.find(item => item.OrderCode==targetOrderCode)
+    if(targetRecord){
+      operateOrder(targetRecord,1)
+      return
+    }
+    ChargeApiCtrl.ChargeDetail({orderCode:targetOrderCode}).then(data=>{
+      orderInfo.value=data
+      paymentVisible.value=true
+    }).catch(() => {}).finally(() => {})
+  }
+
   const seeDetail=(record)=>{
     const fromPath = route.path
     const removeGuard = router.beforeEach((to) => {

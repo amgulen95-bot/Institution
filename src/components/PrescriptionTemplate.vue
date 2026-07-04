@@ -139,7 +139,7 @@
   </div>
 </template>
 <script lang="ts" setup>
-  import { ref,computed,h,onMounted,createVNode,watch} from 'vue';
+  import { ref,computed,h,onMounted,createVNode,watch,nextTick} from 'vue';
   import {TemplateApiCtrl} from '/@/api/myy/template';
   import {PlusOutlined,ExclamationCircleOutlined} from '@ant-design/icons-vue';
   import { useMessage } from '/@/hooks/web/useMessage';
@@ -153,11 +153,14 @@
     isModal:{ type: Boolean, default: false},
   });
 
-  const emit = defineEmits(['use-template'])
+  const emit = defineEmits(['use-template','ready'])
   const { createMessage} = useMessage()
   const go = useGo();
   const loading = ref(false);
   const activeKey = ref(props.activeKey)
+  const initialReady = ref(false)
+  const templateCache = ref({})
+  const templateCategoryCache = ref({})
   watch(() => props.activeKey, (newVal) => {
     activeKey.value = newVal;
   });
@@ -192,8 +195,23 @@
 
   onMounted(()=>{
     getBasicEnum()
-    getCategoryList()
+    getCategoryList(true)
   })
+
+  const waitStableFrame = async () => {
+    await nextTick()
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+  }
+
+  const markInitialReady = async () => {
+    if(initialReady.value){
+      return
+    }
+    await waitStableFrame()
+    initialReady.value = true
+    emit('ready')
+  }
 
   const computeIndication=computed(()=>{
     return (val)=>{
@@ -216,23 +234,129 @@
     })
   }
 
-  // 获取模板分类
-  const getCategoryList=()=>{
-    loading.value=true
-    let api=TemplateApiCtrl.SystemPrescriptCategoryList
-    let query={}
-    if(activeKey.value==1||activeKey.value==2){
-      api=TemplateApiCtrl.SystemPrescriptCategoryList
-      query={recipel:activeKey.value==1?4:3}
-    }else{
-      api=TemplateApiCtrl.CategoryList
-      query={type:1,limit:100}
+  const getCategoryRequest = (key = activeKey.value) => {
+    if(key==1||key==2){
+      return {
+        api: TemplateApiCtrl.SystemPrescriptCategoryList,
+        query: {recipel:key==1?4:3},
+      }
     }
-    api(query).then(data=>{
+    return {
+      api: TemplateApiCtrl.CategoryList,
+      query: {type:1,limit:100},
+    }
+  }
+
+  const getListRequest = (key, categoryId, searchKeyword = keyword.value) => {
+    if(key==1||key==2){
+      return {
+        api: TemplateApiCtrl.SystemPrescriptList,
+        query: { recipel: key == 1 ? 4 : 3, categoryId, limit:100, keyword:searchKeyword},
+      }
+    }
+    return {
+      api: TemplateApiCtrl.PrescriptList,
+      query: { categoryId, keyword:searchKeyword, auditStatus:1},
+    }
+  }
+
+  const getDetailRequest = (key, id) => {
+    return {
+      api: key==1||key==2 ? TemplateApiCtrl.SystemPrescriptDetail : TemplateApiCtrl.PrescriptDetail,
+      query: { id },
+    }
+  }
+
+  const normalizeDetailData = (key, data) => {
+    if(key==1||key==2){
+      const detail = cloneDeep(data.Details?.[0] || {})
+      detail.CertNumber=data.CertNumber
+      return {
+        detail,
+        materialsList: data.Details?.[0]?.Materials || [],
+      }
+    }
+    return {
+      detail: data.Template || {},
+      materialsList: data.Details || [],
+    }
+  }
+
+  const applyTemplateCache = (key, categoryId) => {
+    const cached = templateCache.value[key]?.[categoryId]
+    if(!cached){
+      return false
+    }
+    templateInfo.value.list = cloneDeep(cached.list)
+    templateInfo.value.id = cached.id
+    templateInfo.value.materialsList = cloneDeep(cached.materialsList)
+    templateInfo.value.detail = cloneDeep(cached.detail)
+    return true
+  }
+
+  const preloadTemplateCache = async () => {
+    const keys = [1,2,3]
+    await Promise.all(keys.map(async (key) => {
+      const categoryRequest = getCategoryRequest(key)
+      const categoryData = await categoryRequest.api(categoryRequest.query).catch(() => ({ Rows: [] }))
+      const categories = categoryData.Rows || categoryData || []
+      templateCategoryCache.value[key] = categories
+      templateCache.value[key] = templateCache.value[key] || {}
+      await Promise.all(categories.map(async (category) => {
+        const listRequest = getListRequest(key, category.Id, '')
+        const listData = await listRequest.api(listRequest.query).catch(() => ({ Rows: [] }))
+        const list = listData.Rows || listData || []
+        const selectedId = list.length ? list[0].Id : null
+        let detail = {}
+        let materialsList:any[] = []
+        if(selectedId){
+          const detailRequest = getDetailRequest(key, selectedId)
+          const detailData = await detailRequest.api(detailRequest.query).catch(() => null)
+          if(detailData){
+            const normalized = normalizeDetailData(key, detailData)
+            detail = normalized.detail
+            materialsList = normalized.materialsList
+          }
+        }
+        templateCache.value[key][category.Id] = {
+          list,
+          id: selectedId,
+          detail,
+          materialsList,
+        }
+      }))
+    }))
+  }
+
+  // 获取模板分类
+  const getCategoryList=(isInitial = false)=>{
+    if(!isInitial && !keyword.value && templateCategoryCache.value[activeKey.value]){
+      categoryInfo.value.list=cloneDeep(templateCategoryCache.value[activeKey.value])
+      if(categoryInfo.value.list.length){
+        categoryInfo.value.id=categoryInfo.value.list[0].Id
+        applyTemplateCache(activeKey.value, categoryInfo.value.id)
+      }else{
+        categoryInfo.value.id=null
+        templateInfo.value.id=null
+        templateInfo.value.list=[]
+        templateInfo.value.materialsList=[]
+        templateInfo.value.detail={}
+      }
+      return Promise.resolve()
+    }
+    loading.value=true
+    const request = getCategoryRequest()
+    return request.api(request.query).then(data=>{
       categoryInfo.value.list=data.Rows||data
       if(categoryInfo.value.list.length){
         categoryInfo.value.id=categoryInfo.value.list[0].Id
-        getPrescriptList()
+        if(isInitial){
+          return preloadTemplateCache().then(() => {
+            applyTemplateCache(activeKey.value, categoryInfo.value.id)
+            return markInitialReady()
+          })
+        }
+        return getPrescriptList(false)
       }else{
         categoryInfo.value.id=null
         categoryInfo.value.list=[]
@@ -240,61 +364,62 @@
         templateInfo.value.list=[]
         templateInfo.value.materialsList=[]
         templateInfo.value.detail={}
+        if(isInitial){
+          return markInitialReady()
+        }
       }
-    }).catch(() => {}).finally(() => {loading.value=false })
+    }).catch(() => {
+      if(isInitial){
+        return markInitialReady()
+      }
+    }).finally(() => {loading.value=false })
   }
 
   // 获取模板列表
-  const getPrescriptList = () => {
-    loading.value = true
-    let api = TemplateApiCtrl.SystemPrescriptList
-    let query = {}
-    if (activeKey.value == 1 || activeKey.value == 2) {
-      api = TemplateApiCtrl.SystemPrescriptList
-      query = { recipel: activeKey.value == 1 ? 4 : 3, categoryId: categoryInfo.value.id,limit:100,keyword:keyword.value}
-    } else {
-      api = TemplateApiCtrl.PrescriptList
-      query = { categoryId: categoryInfo.value.id,keyword:keyword.value,auditStatus:1}
+  const getPrescriptList = (manageLoading = true) => {
+    if(manageLoading){
+      loading.value = true
     }
-    api(query).then(data => {
+    const request = getListRequest(activeKey.value, categoryInfo.value.id)
+    return request.api(request.query).then(data => {
       templateInfo.value.list = data.Rows || data
       if (templateInfo.value.list.length) {
         templateInfo.value.id = templateInfo.value.list[0].Id
-        getPrescriptDetail()
+        return getPrescriptDetail(false)
       }
-    }).catch(() => {}).finally(() => { loading.value = false })
+      templateInfo.value.id=null
+      templateInfo.value.materialsList=[]
+      templateInfo.value.detail={}
+    }).catch(() => {}).finally(() => {
+      if(manageLoading){
+        loading.value = false
+      }
+    })
   }
 
   // 获取模板详情
-  const getPrescriptDetail = () => {
-    loading.value = true
-    let api = TemplateApiCtrl.SystemPrescriptDetail
-    let query = { id: templateInfo.value.id }
-
-    if (activeKey.value == 1 || activeKey.value == 2) {
-      api = TemplateApiCtrl.SystemPrescriptDetail
-      query = { id: templateInfo.value.id }
-    } else {
-      api = TemplateApiCtrl.PrescriptDetail
-      query = { id: templateInfo.value.id }
+  const getPrescriptDetail = (manageLoading = true) => {
+    if(manageLoading){
+      loading.value = true
     }
-
-    api(query).then(data => {
-      if(activeKey.value==1||activeKey.value==2){
-        templateInfo.value.materialsList=data.Details[0].Materials
-        templateInfo.value.detail=data.Details[0]
-        templateInfo.value.detail.CertNumber=data.CertNumber
-      }else{
-        templateInfo.value.detail=data.Template
-        templateInfo.value.materialsList=data.Details
+    const request = getDetailRequest(activeKey.value, templateInfo.value.id)
+    return request.api(request.query).then(data => {
+      const normalized = normalizeDetailData(activeKey.value, data)
+      templateInfo.value.detail=normalized.detail
+      templateInfo.value.materialsList=normalized.materialsList
+    }).catch(() => {}).finally(() => {
+      if(manageLoading){
+        loading.value = false
       }
-    }).catch(() => {}).finally(() => { loading.value = false })
+    })
   }
 
   // 切换分类
   const changeClassify = (item) => {
     categoryInfo.value.id = item.Id
-    getPrescriptList()
+    if(keyword.value || !applyTemplateCache(activeKey.value, item.Id)){
+      getPrescriptList()
+    }
   }
 
   // 切换模板

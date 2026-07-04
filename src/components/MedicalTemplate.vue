@@ -105,7 +105,7 @@
   </div>
 </template>
 <script lang="ts" setup>
-  import { ref,h,onMounted,createVNode,watch} from 'vue';
+  import { ref,h,onMounted,createVNode,watch,nextTick} from 'vue';
   import {TemplateApiCtrl} from '/@/api/myy/template';
   import {PlusOutlined,ExclamationCircleOutlined} from '@ant-design/icons-vue';
   import { useMessage } from '/@/hooks/web/useMessage';
@@ -117,10 +117,11 @@
     isModal:{ type: Boolean, default: false},
   });
 
-  const emit = defineEmits(['use-template'])
+  const emit = defineEmits(['use-template','ready'])
   const { createMessage} = useMessage()
   const go = useGo();
   const loading = ref(false);
+  const initialReady = ref(false);
   const keyword=ref('')
   const templateFormIns=ref()
   const categoryInfo=ref({
@@ -132,6 +133,7 @@
     id:null,
     detail:{},
   })
+  const categoryTemplateCache=ref({})
   const categoryFormIns=ref()
   const categoryForm={
     Id:0,
@@ -174,25 +176,92 @@
   })
 
   onMounted(()=>{
-    getCategoryList()
+    getCategoryList(true)
   })
 
+  const waitStableFrame = async () => {
+    await nextTick()
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+  }
+
+  const markInitialReady = async () => {
+    if(initialReady.value){
+      return
+    }
+    await waitStableFrame()
+    initialReady.value = true
+    emit('ready')
+  }
+
+  const applyCategoryCache = (categoryId) => {
+    const cached = categoryTemplateCache.value[categoryId]
+    if(!cached){
+      return false
+    }
+    templateInfo.value.list = cloneDeep(cached.list)
+    templateInfo.value.id = cached.id
+    templateInfo.value.detail = cloneDeep(cached.detail)
+    return true
+  }
+
+  const preloadCategoryTemplates = async () => {
+    const categoryList = categoryInfo.value.list || []
+    await Promise.all(categoryList.map(async (category) => {
+      const listData = await TemplateApiCtrl.MedicalList({
+        categoryId: category.Id,
+        keyword:'',
+        page:1,
+        limit:100
+      }).catch(() => ({ Rows: [] }))
+      const list = listData.Rows || []
+      const selectedId = list.length ? list[0].Id : null
+      let detail = {}
+      if(selectedId){
+        detail = await TemplateApiCtrl.MedicalDetail({ id: selectedId }).catch(() => ({}))
+      }
+      categoryTemplateCache.value[category.Id] = {
+        list,
+        id: selectedId,
+        detail,
+      }
+    }))
+  }
+
   // 获取模板分类
-  const getCategoryList=()=>{
+  const getCategoryList=(isInitial = false)=>{
     loading.value=true
-    TemplateApiCtrl.CategoryList({type:2,limit:100}).then(data=>{
+    return TemplateApiCtrl.CategoryList({type:2,limit:100}).then(data=>{
       categoryInfo.value.list=data.Rows
       if(categoryInfo.value.list.length){
         categoryInfo.value.id=categoryInfo.value.list[0].Id
-        getPrescriptList()
+        if(isInitial){
+          return preloadCategoryTemplates().then(() => {
+            applyCategoryCache(categoryInfo.value.id)
+            return markInitialReady()
+          })
+        }
+        return getPrescriptList(false, false)
       }
-    }).catch(() => {}).finally(() => {loading.value=false })
+      templateInfo.value.id=null
+      templateInfo.value.list=[]
+      templateInfo.value.detail={}
+      if(isInitial){
+        return markInitialReady()
+      }
+    }).catch(() => {
+      if(isInitial){
+        return markInitialReady()
+      }
+    }).finally(() => {loading.value=false })
   }
 
   // 获取模板列表
-  const getPrescriptList = () => {
-    loading.value = true
-    TemplateApiCtrl.MedicalList({
+  const getPrescriptList = (isInitial = false, manageLoading = true) => {
+    if(manageLoading){
+      loading.value = true
+    }
+    return TemplateApiCtrl.MedicalList({
       categoryId: categoryInfo.value.id,
       keyword:keyword.value,
       page:1,
@@ -201,23 +270,51 @@
       templateInfo.value.list = data.Rows
       if (templateInfo.value.list.length) {
         templateInfo.value.id = templateInfo.value.list[0].Id
-        getPrescriptDetail()
+        return getPrescriptDetail(isInitial, false)
       }
-    }).catch(() => {}).finally(() => { loading.value = false })
+      templateInfo.value.id=null
+      templateInfo.value.detail={}
+      if(isInitial){
+        return markInitialReady()
+      }
+    }).catch(() => {
+      if(isInitial){
+        return markInitialReady()
+      }
+    }).finally(() => {
+      if(manageLoading){
+        loading.value = false
+      }
+    })
   }
 
   // 获取模板详情
-  const getPrescriptDetail = () => {
-    loading.value = true
-    TemplateApiCtrl.MedicalDetail({ id: templateInfo.value.id }).then(data => {
+  const getPrescriptDetail = (isInitial = false, manageLoading = true) => {
+    if(manageLoading){
+      loading.value = true
+    }
+    return TemplateApiCtrl.MedicalDetail({ id: templateInfo.value.id }).then(data => {
       templateInfo.value.detail = data
-    }).catch(() => {}).finally(() => { loading.value = false })
+      if(isInitial){
+        return markInitialReady()
+      }
+    }).catch(() => {
+      if(isInitial){
+        return markInitialReady()
+      }
+    }).finally(() => {
+      if(manageLoading){
+        loading.value = false
+      }
+    })
   }
 
   // 切换分类
   const changeClassify = (item) => {
     categoryInfo.value.id = item.Id
-    getPrescriptList()
+    if(keyword.value || !applyCategoryCache(item.Id)){
+      getPrescriptList()
+    }
   }
 
   // 切换模板

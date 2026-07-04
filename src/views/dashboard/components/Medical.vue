@@ -3,7 +3,7 @@
     <div class="flex justify-between align-center pt16px pb8px pl16px pr16px">
       <div class="text-16px text-bold ">当前病历</div>
       <a-space :size="8">
-        <a-button class="medical-system-radius-btn" @click="medicalVisible=true">常用模板</a-button>
+        <a-button class="medical-system-radius-btn" @click="openMedicalTemplate">常用模板</a-button>
         <a-tooltip @click="handleTemplate">
           <template #title>保存为模板</template>
           <img class="w32px h32px pointer" src="../../../assets/images/templateIcon.png" alt="">
@@ -309,15 +309,15 @@
 			</template>
     </a-modal>
 
-    <a-modal v-model:open="medicalVisible" centered width="1080px" :maskClosable="false" destroyOnClose :footer="null">
-      <div style="height: calc(100vh - 200px);">
-        <MedicalTemplate :isModal="true" @use-template="handleTemplateSelect"></MedicalTemplate>
+    <a-modal v-model:open="medicalVisible" centered width="1080px" :maskClosable="false" :destroyOnClose="false" :forceRender="true" :footer="null">
+      <div class="medical-template-modal-body" :class="{ 'is-ready': medicalTemplateReady }" style="height: calc(100vh - 200px);">
+        <MedicalTemplate :isModal="true" @use-template="handleTemplateSelect" @ready="handleMedicalTemplateReady"></MedicalTemplate>
       </div>
     </a-modal>
   </div>
 </template>
 <script lang="ts" setup>
-  import { onMounted,ref,watch} from 'vue';
+  import { nextTick,onMounted,ref,watch} from 'vue';
   import { useMessage } from '/@/hooks/web/useMessage';
   import { cloneDeep } from 'lodash-es';
   import {TemplateApiCtrl} from '/@/api/myy/template';
@@ -416,6 +416,8 @@
   })
   const callTemplateVisible=ref(false)
   const medicalVisible=ref(false)
+  const medicalTemplateReady=ref(false)
+  const medicalTemplatePendingVisible=ref(false)
   const categoryList=ref([])
   const activeKey=ref(1)
   const diagnosisPopover=ref({
@@ -487,6 +489,24 @@
     }
     templateModal.value.form=cloneDeep(templateForm)
     templateModal.value.visible=true
+  }
+
+  const openMedicalTemplate=()=>{
+    if(medicalTemplateReady.value){
+      medicalVisible.value=true
+      return
+    }
+    medicalTemplatePendingVisible.value=true
+  }
+
+  const handleMedicalTemplateReady=()=>{
+    medicalTemplateReady.value=true
+    if(medicalTemplatePendingVisible.value){
+      medicalTemplatePendingVisible.value=false
+      nextTick(() => {
+        medicalVisible.value=true
+      })
+    }
   }
 
   const saveTemplate=()=>{
@@ -828,5 +848,12 @@
 }
 .medical-system-radius-btn {
   border-radius: 8px !important;
+}
+.medical-template-modal-body {
+  opacity: 0;
+  transition: opacity 160ms ease-out;
+}
+.medical-template-modal-body.is-ready {
+  opacity: 1;
 }
 </style>

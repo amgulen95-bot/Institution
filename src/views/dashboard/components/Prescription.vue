@@ -26,7 +26,7 @@
     </div>
 
     <div class="flex justify-between align-center">
-      <div class="prescription-system-radius-btn bg-[#e1ebff] text-theme border-rd-4px px12px py7px text-bold pointer" @click="prescriptionVisible=true">处方模板</div>
+      <div class="prescription-system-radius-btn bg-[#e1ebff] text-theme border-rd-4px px12px py7px text-bold pointer" @click="openPrescriptionTemplate">处方模板</div>
       <div class="color-[#4E5766]">共计{{prescription.list.length}}个处方</div>
     </div>
     <a-form :model="prescription" ref="prescriptionFormIns">
@@ -50,7 +50,7 @@
             </a-space>
           </div>
 
-          <div class="pt24px pb24px pl16px pr16px" v-if="!item.ProId">
+          <div class="pt24px pb0px pl16px pr16px" v-if="!item.ProId">
             <a-space :size="[24, 12]" wrap>
               <MaterialInput
                 v-for="(p, i) in item.Materials" 
@@ -67,7 +67,7 @@
               />
             </a-space>
           </div>
-          <div class="pt24px pb24px pl16px pr16px" v-else>
+          <div class="pt24px pb0px pl16px pr16px" v-else>
             <a-space :size="[24, 12]" wrap>
               <template v-for="(p, i) in readonlyMaterials(item)" :key="i">
                 <div class="template-material-readonly flex justify-between align-center border border-rd-4px border-color-[#E9ECEF] pt7px pb7px pr12px pl5px position-relative">
@@ -81,7 +81,7 @@
           </div>
 
           <div class="pl16px pr8px pb8px">
-            <div class="flex mt12px medicinePlan">
+            <div class="flex medicinePlan">
               <div class="medicine-plan-bar">
               <a-form-item class="medicine-plan-item medicine-plan-item-count medicine-plan-item-editable" :name="['list', index, 'DoseCount']" :rules="{validator: validateDoseCount, trigger: 'blur'}">
                 <div class="medicine-plan-field medicine-plan-field-count medicine-plan-field-filled border-rd-4px bg-[#F6F8FC] flex align-center text-bold pt5px pb5px pr8px">
@@ -224,9 +224,9 @@
       </section>
     </a-modal>
 
-    <a-modal v-model:open="prescriptionVisible" centered width="1080px" :maskClosable="false" destroyOnClose :footer="null">
-      <div style="height: calc(100vh - 200px);">
-        <PrescriptionTemplate :isModal="true" @use-template="handleTemplateSelect"></PrescriptionTemplate>
+    <a-modal v-model:open="prescriptionVisible" centered width="1080px" :maskClosable="false" :destroyOnClose="false" :forceRender="true" :footer="null">
+      <div class="prescription-template-modal-body" :class="{ 'is-ready': prescriptionTemplateReady }" style="height: calc(100vh - 200px);">
+        <PrescriptionTemplate :isModal="true" @use-template="handleTemplateSelect" @ready="handlePrescriptionTemplateReady"></PrescriptionTemplate>
       </div>
     </a-modal>
 
@@ -256,6 +256,8 @@
   import MaterialInput from '/@/components/MaterialInput.vue';
   import PrescriptionTemplate from '/@/components/PrescriptionTemplate.vue';
   const prescriptionVisible=ref(false)
+  const prescriptionTemplateReady=ref(false)
+  const prescriptionTemplatePendingVisible=ref(false)
   
   const props = defineProps({
     prescriptionList: Array<any>,
@@ -343,6 +345,24 @@
     TemplateApiCtrl.CategoryList({type:1,limit:100}).then(data=>{
       categoryList.value=data.Rows
     })
+  }
+
+  const openPrescriptionTemplate=()=>{
+    if(prescriptionTemplateReady.value){
+      prescriptionVisible.value=true
+      return
+    }
+    prescriptionTemplatePendingVisible.value=true
+  }
+
+  const handlePrescriptionTemplateReady=()=>{
+    prescriptionTemplateReady.value=true
+    if(prescriptionTemplatePendingVisible.value){
+      prescriptionTemplatePendingVisible.value=false
+      nextTick(() => {
+        prescriptionVisible.value=true
+      })
+    }
   }
 
   const addPrescription=()=>{
@@ -711,7 +731,7 @@
   max-width: 100%;
   overflow-x: auto;
   overflow-y: visible;
-  padding: 22px 4px 5px;
+  padding: 0 4px 0 0;
   scrollbar-width: thin;
 
   :deep(.ant-input-number-input) {
@@ -724,6 +744,7 @@
     align-items: stretch;
     min-width: max-content;
     max-width: none;
+    margin-top: 20px;
     overflow: visible;
     border: 1px solid #E8EEF7;
     border-radius: 8px;
@@ -1043,5 +1064,12 @@
 }
 .prescription-system-radius-btn {
   border-radius: 8px !important;
+}
+.prescription-template-modal-body {
+  opacity: 0;
+  transition: opacity 160ms ease-out;
+}
+.prescription-template-modal-body.is-ready {
+  opacity: 1;
 }
 </style>

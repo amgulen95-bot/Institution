@@ -15,7 +15,7 @@
           <a-tab-pane :key="1" tab="就诊中"></a-tab-pane>
           <a-tab-pane :key="2" tab="已完成"></a-tab-pane>
         </a-tabs>
-        <div class="overflow-y-scroll scrollbar-none" style="height: calc(100% - 142px);">
+        <div ref="todayVisitListRef" class="overflow-y-scroll scrollbar-none today-visit-content-panel" :class="{ 'today-visit-content-switching': todayVisitSwitching }" style="height: calc(100% - 142px);">
           <div class="p16px border border-color-[#F3F4F7] border-rd-8px flex mb12px pointer" :class="visitInfo.index==index?'activeTag':''" v-for="(item,index) in todayVisit.list" @click="seleceVisit(item,index)" :key="index">
             <img class="w52px h52px border-rd-50%" :src="getImageUrl(`userAvatar${(index % 7) + 1}.png`)" alt="">
             <div class="flex-sub ml12px">
@@ -46,10 +46,7 @@
           <a-empty class="pt48px" v-if="!todayVisit.list.length" />
         </div>
       </a-card>
-      <div class="min-w600px flex-sub ml16px h-100% overflow-y-scroll pb12px scrollbar-none receptionPanel">
-        <template v-if="visitInfo.detail.Visit?.VisitStatus==2&&visitInfo.Id">
-          <ReceptionDetails :data="visitInfo.detail"></ReceptionDetails>
-        </template>
+      <div class="min-w600px flex-sub ml16px h-100% overflow-y-scroll pb12px scrollbar-none receptionPanel today-visit-content-panel" :class="{ 'today-visit-content-switching': todayVisitSwitching || todayVisitDetailSwitching }">
         <template v-if="visitInfo.detail.Visit?.VisitStatus!=2">
           <div class="flex justify-between align-center flex-wrap">
             <div class="flex justify-between align-center flex-wrap">
@@ -89,12 +86,12 @@
                   <CloseOutlined v-if="patientModal.form.Id" @click="handleClearPatient" />
                 </span>
               </a-space>
-              <a-space class="pt8px pb8px pl16px pr16px bg-[#fff] border-rd-8px ml8px mb8px" :size="16">
-                <div class="flex align-center pointer">
+              <a-space class="patient-action-card pt8px pb8px pl16px pr16px bg-[#fff] border-rd-8px ml8px mb8px" :size="16">
+                <div class="flex align-center pointer patient-action-field patient-id-card-action">
                   <img class="w20px h20px" src="../../assets/images/idCard.png" alt="">
                 </div>
                 <a-divider type="vertical" />
-                <div class="flex align-center pointer" @click="addPatientVisible=true">
+                <div class="flex align-center pointer patient-action-field patient-add-action" @click="addPatientVisible=true">
                   <img class="w20px h20px" src="../../assets/images/addUser.png" alt="">
                   <span class="ml4px whitespace-nowrap">新增患者</span>
                 </div>
@@ -205,8 +202,9 @@
             </a-space>
           </a-card>
         </template>
+        <ReceptionDetails :data="visitInfo.detail" v-else></ReceptionDetails>
       </div>
-      <div class="w-380px ml16px h-100% overflow-y-scroll scrollbar-none">
+      <div class="w-380px ml16px h-100% overflow-y-scroll scrollbar-none today-visit-content-panel" :class="{ 'today-visit-content-switching': todayVisitSwitching || todayVisitDetailSwitching }">
         <a-card class="otherCard" title="就诊历史" style="height: calc(50% - 12px);">
           <template #extra v-if="historyList.length">
             <div class="color-[#A5A8B4] pointer" @click="medicalModalVisible=true">
@@ -214,19 +212,19 @@
               <RightOutlined />
             </div>
           </template>
-          <a-card border class="h-100%" v-if="historyList.length">
+          <a-card border class="h-100% visit-history-card" v-if="historyList.length">
             <div class="overflow-y-scroll scrollbar-none" style="height: calc(100% - 16px);">
-              <a-steps progress-dot :current="1" direction="vertical">
+              <a-steps class="visit-history-steps" progress-dot :current="1" direction="vertical">
                 <a-step v-for="(item,index) in historyList" :key="index">
                   <template #title>
-                    <span class="text-14px">{{item.Diagnosis}}</span>
-                  </template>
-                  <template #subTitle>
-                    <a-tag :bordered="false" color="success" v-if="item.VisitType==0">初诊</a-tag>
-                    <a-tag :bordered="false" color="processing" v-else>复诊</a-tag>
-                  </template>
-                  <template #description>
-                    <div class="text-12px mt4px">{{item.CreateTime}}</div>
+                    <div class="visit-history-item">
+                      <div class="visit-history-item__main">
+                        <div class="visit-history-item__diagnosis">{{item.Diagnosis || '--'}}</div>
+                        <a-tag class="visit-history-item__tag" :bordered="false" color="success" v-if="item.VisitType==0">初诊</a-tag>
+                        <a-tag class="visit-history-item__tag" :bordered="false" color="processing" v-else>复诊</a-tag>
+                      </div>
+                      <div class="visit-history-item__time">{{item.CreateTime}}</div>
+                    </div>
                   </template>
                 </a-step>
               </a-steps>
@@ -313,6 +311,12 @@
     <FeePreview v-model:visible="feeModal.visible" :originallyAmount="feeModal.originallyAmount" :fee="feeModal.info.Fee" :list-data="feeModal.info.Items" @confirm="savePrice"></FeePreview>
 
     <ReceiptInfo v-model:visible="receiptModal.visible" :patient="patientModal.form" :visitId="visitInfo.Id"  :total="feeModal.info.Fee.ReceivableAmount" @confirm="saveReceipt"></ReceiptInfo>
+    <OrderPayCountdownModal
+      v-model:visible="orderPayCountdown.visible"
+      :order-code="orderPayCountdown.orderCode"
+      @confirm="goChargePayment"
+      @cancel="cancelChargePaymentCountdown"
+    ></OrderPayCountdownModal>
 
     <ConfirmPayment v-model:visible="payModal.visible" :payInfo="payModal.info" @confirm="confirmPay"></ConfirmPayment>
 
@@ -323,7 +327,7 @@
   </div>
 </template>
 <script lang="ts" setup>
-  import { onBeforeUnmount,onMounted,ref,createVNode,nextTick} from 'vue';
+  import { onActivated,onBeforeUnmount,onMounted,ref,createVNode,nextTick} from 'vue';
   import { useMessage } from '/@/hooks/web/useMessage';
   import { Modal } from 'ant-design-vue';
   import { useUserStore } from '@/store/modules/user';
@@ -339,6 +343,7 @@
   import ConfirmPayment from '/@/components/ConfirmPayment.vue';
   import FeePreview from './components/FeePreview.vue';
   import ReceiptInfo from './components/ReceiptInfo.vue';
+  import OrderPayCountdownModal from './components/OrderPayCountdownModal.vue';
   import PatientList from '/@/components/PatientList.vue';
   import Prescription from './components/Prescription.vue';
   import Medical from './components/Medical.vue';
@@ -349,6 +354,10 @@
   const userStore = useUserStore();
   const loading=ref(false)
   const go = useGo();
+  const todayVisitListRef=ref<HTMLElement | null>(null)
+  const todayVisitSwitching=ref(false)
+  const todayVisitDetailSwitching=ref(false)
+  const hasMounted=ref(false)
   const addPatientVisible=ref(false)
   const prescriptionRef=ref()
   const medicalRef=ref()
@@ -375,6 +384,12 @@
     visible:false,
     loading:false,
     info:{},
+  })
+  const orderPayCountdown=ref({
+    visible:false,
+    orderCode:'',
+    visitId:'',
+    patientId:'',
   })
   const feeModal=ref({
     visible:false,
@@ -457,7 +472,7 @@
   const todayVisit=ref({
     searchParams:{
       keyword:'',
-      status:1,
+      status:null,
       page:1,
       limit:20,
       docId:userStore.getUserInfo.Doctor.DoctorId,
@@ -465,11 +480,27 @@
     list:[],
     hasNextPage: false,
   })
-
+  let todayVisitSwitchKey = 0
+  const waitFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+  const waitMs = (delay: number) => new Promise<void>((resolve) => setTimeout(resolve, delay))
+  const waitTodayVisitStableFrame = async () => {
+    await nextTick()
+    await waitFrame()
+    await waitFrame()
+  }
   onMounted(()=>{
     getBasicEnum()
-    getTodayVisitList()
+    resetTodayVisitToAllFirst()
     getSettingDetail()
+    nextTick(() => {
+      hasMounted.value = true
+    })
+  })
+
+  onActivated(()=>{
+    if (hasMounted.value) {
+      resetTodayVisitToAllFirst()
+    }
   })
 
   const getSettingDetail=()=>{
@@ -487,11 +518,40 @@
     })
   }
 
+  const resetTodayVisitToAllFirst=()=>{
+    saveCurrentDraft()
+    todayVisit.value.searchParams.status=null
+    todayVisit.value.searchParams.page=1
+    todayVisit.value.list=[]
+    todayVisit.value.hasNextPage=false
+    InitializeAll()
+    nextTick(() => {
+      if(todayVisitListRef.value){
+        todayVisitListRef.value.scrollTop = 0
+      }
+    })
+    return getTodayVisitList(false)
+  }
+
   // 快速接诊
   const handleQuick=()=>{
+    saveCurrentDraft()
+    todayVisit.value.searchParams.status=null
+    todayVisit.value.searchParams.page=1
+    todayVisit.value.list=[]
+    todayVisit.value.hasNextPage=false
     InitializeAll()
-    todayVisit.value.list.unshift(cloneDeep(anonymousInfo))
-    addDraftPatient(cloneDeep(anonymousInfo))
+    const draftInfo = {
+      ...cloneDeep(anonymousInfo),
+      DraftId: Date.now(),
+    }
+    todayVisit.value.list.unshift(draftInfo)
+    addDraftPatient(cloneDeep(draftInfo))
+    nextTick(() => {
+      if(todayVisitListRef.value){
+        todayVisitListRef.value.scrollTop = 0
+      }
+    })
   }
 
     // 初始化患者、病历、处方
@@ -572,9 +632,12 @@
   }
   
   // 获取今日接诊列表
-  const getTodayVisitList=(isLoadMore = false)=>{
-    loading.value=true
-    PrescriptApiCtrl.TodayVisitList(todayVisit.value.searchParams).then(data=>{
+  const getTodayVisitList=(isLoadMore = false, options: { autoSelect?: boolean; showLoading?: boolean } = {})=>{
+    const requestOptions = { autoSelect: true, showLoading: true, ...options }
+    if(requestOptions.showLoading){
+      loading.value=true
+    }
+    return PrescriptApiCtrl.TodayVisitList(todayVisit.value.searchParams).then(data=>{
       if (isLoadMore) {
         todayVisit.value.list = [...todayVisit.value.list, ...data.Rows];
       } else {
@@ -590,11 +653,11 @@
         }
       }
 
-      if(todayVisit.value.list.length){
+      if(todayVisit.value.list.length && requestOptions.autoSelect){
         visitInfo.value.index=0
         visitInfo.value.Id=todayVisit.value.list[visitInfo.value.index].Id
         if(visitInfo.value.Id){
-          visitDetail()
+          return visitDetail(requestOptions.showLoading).then(() => data)
         }else{
           visitInfo.value={
             Id:'',
@@ -619,11 +682,24 @@
           }
         }
       }
-    }).catch(() => {}).finally(() => {loading.value=false })
+      return data
+    }).catch(() => null).finally(() => {
+      if(requestOptions.showLoading){
+        loading.value=false
+      }
+    })
   }
 
   // 选择今日接诊项
-  const seleceVisit=(item,index=0)=>{
+  const seleceVisit=async (item,index=0)=>{
+    if(visitInfo.value.index === index && visitInfo.value.Id === item.Id){
+      return
+    }
+    const switchKey = ++todayVisitSwitchKey
+    todayVisitDetailSwitching.value = true
+    await waitMs(90)
+    if (switchKey !== todayVisitSwitchKey) return
+
     const prevItem = todayVisit.value.list[visitInfo.value.index]
     if (prevItem) {
       prevItem.MedicalInfo = {
@@ -636,6 +712,7 @@
         addDraftPatient(prevItem);
       }
     }
+    visitInfo.value.index = index;
     visitInfo.value.Id = item.Id;
     const newMedicalInfo = todayVisit.value.list[index].MedicalInfo;
     if (newMedicalInfo && Object.keys(newMedicalInfo).length > 0) {
@@ -651,8 +728,10 @@
       }
 
       if(patientModal.value.form.Id){
-        getVisitList(patientModal.value.form.Id)
-        getPrescriptSummaryList(patientModal.value.form.Id)
+        await Promise.all([
+          getVisitList(patientModal.value.form.Id),
+          getPrescriptSummaryList(patientModal.value.form.Id),
+        ]).catch(() => {})
       }else{
         prescriptList.value=[]
         historyList.value=[]
@@ -666,33 +745,56 @@
     if (!item.Id && newMedicalInfo && Object.keys(newMedicalInfo).length > 0) {
       nextTick(() => { handleCalculateFee(); })
     }
-    visitInfo.value.index = index;
     if (item.Id) {
-      visitDetail();
+      await visitDetail(false);
+    }
+    if (switchKey !== todayVisitSwitchKey) return
+    await waitTodayVisitStableFrame()
+    if (switchKey === todayVisitSwitchKey) {
+      todayVisitDetailSwitching.value = false
     }
   }
 
   // 获取接诊详情
-  const visitDetail=()=>{
-    loading.value=true
-    PrescriptApiCtrl.VisitDetail({id:visitInfo.value.Id}).then(data=>{
+  const visitDetail=(showLoading = true)=>{
+    if(showLoading){
+      loading.value=true
+    }
+    return PrescriptApiCtrl.VisitDetail({id:visitInfo.value.Id}).then(data=>{
       visitInfo.value.detail=cloneDeep(data)
-      getPatientDetail(visitInfo.value.detail.Visit.PatientId,1)
-      getVisitList(visitInfo.value.detail.Visit.PatientId)
-      getPrescriptSummaryList(visitInfo.value.detail.Visit.PatientId)
-    }).catch(() => {}).finally(() => {loading.value=false })
+      return Promise.all([
+        getPatientDetail(visitInfo.value.detail.Visit.PatientId,1),
+        getVisitList(visitInfo.value.detail.Visit.PatientId),
+        getPrescriptSummaryList(visitInfo.value.detail.Visit.PatientId),
+      ])
+    }).catch(() => {}).finally(() => {
+      if(showLoading){
+        loading.value=false
+      }
+    })
   }
 
   // 获取患者就诊历史
-  const getVisitList=(patientId)=>{
-    PatientApiCtrl.VisitList({patientId:patientId}).then(data=>{
-      historyList.value=data.Rows
+  const getVisitList=(patientId, options: { syncVisitType?: boolean; syncMedicalHistory?: boolean } = {})=>{
+    return PatientApiCtrl.VisitList({patientId:patientId}).then(data=>{
+      const rows = data.Rows || []
+      historyList.value=rows
+      if(options.syncVisitType){
+        visitOtherForm.value.VisitType = rows.length ? 1 : 0
+      }
+      if(options.syncMedicalHistory && rows.length){
+        const info=rows[0]
+        visitForm.value.PresentIllness=info.PresentIllness
+        visitForm.value.PastHistory=info.PastHistory
+        visitForm.value.AllergyHistory=info.AllergyHistory
+      }
+      return rows
     })
   }
 
   // 获取处方记录
   const getPrescriptSummaryList=(patientId)=>{
-    OrderApiCtrl.PrescriptSummaryList({patientId:patientId}).then(data=>{
+    return OrderApiCtrl.PrescriptSummaryList({patientId:patientId}).then(data=>{
       prescriptList.value=data.Rows
     })
   }
@@ -703,11 +805,12 @@
       if(type!=1){
         visitInfo.value.index=0
       }
-      PatientApiCtrl.PatientDetail({patientId:id}).then(data=>{
+      return PatientApiCtrl.PatientDetail({patientId:id}).then(data=>{
         patientModal.value.form = cloneDeep(data.Patient)
         patientModal.value.form.Id=data.Patient.PatientId
       }).catch(() => {}).finally(() => {})
     }
+    return Promise.resolve()
   }
 
   // 循环头像
@@ -720,24 +823,31 @@
     getTodayVisitList(true)
   }
 
+  const syncCurrentVisitListItem=(info)=>{
+    const currentItem = todayVisit.value.list[visitInfo.value.index]
+    if(currentItem){
+      Object.assign(currentItem, info)
+    }
+  }
+
   const selectGender=(e)=>{
-    todayVisit.value.list[visitInfo.value.index].PatientGender=e
+    syncCurrentVisitListItem({ PatientGender: e })
   }
 
   const changeAge=(e)=>{
-    todayVisit.value.list[visitInfo.value.index].PatientAge=e
+    syncCurrentVisitListItem({ PatientAge: e })
   }
 
   const normalizePatientAge=()=>{
     const ageValue = patientModal.value.form.Age
     if (ageValue === null || ageValue === undefined || ageValue === '') {
-      todayVisit.value.list[visitInfo.value.index].PatientAge = ageValue
+      syncCurrentVisitListItem({ PatientAge: ageValue })
       return
     }
     const numberAge = Number(ageValue)
     if (!Number.isFinite(numberAge) || numberAge < 0) {
       patientModal.value.form.Age = null
-      todayVisit.value.list[visitInfo.value.index].PatientAge = null
+      syncCurrentVisitListItem({ PatientAge: null })
       return
     }
     const limitedAge = Math.min(numberAge, 105)
@@ -746,17 +856,17 @@
       : Math.round(limitedAge)
 
     patientModal.value.form.Age = normalizedAge
-    todayVisit.value.list[visitInfo.value.index].PatientAge = normalizedAge
+    syncCurrentVisitListItem({ PatientAge: normalizedAge })
   }
 
   const changePhone=(e)=>{
-    todayVisit.value.list[visitInfo.value.index].PatientPhone=patientModal.value.form.Phone
+    syncCurrentVisitListItem({ PatientPhone: patientModal.value.form.Phone })
   }
 
   const normalizePatientPhone=()=>{
     const phone = String(patientModal.value.form.Phone || '').replace(/\D/g, '').slice(0, 11)
     patientModal.value.form.Phone = phone
-    todayVisit.value.list[visitInfo.value.index].PatientPhone = phone
+    syncCurrentVisitListItem({ PatientPhone: phone })
     return phone
   }
 
@@ -769,12 +879,23 @@
     return true
   }
 
-  const handleTabChange = () => {
-    todayVisit.value.searchParams.page = 1; // 重置页码
-    todayVisit.value.list = [];             // 清空当前列表
-    todayVisit.value.hasNextPage = false;   // 重置加载状态
+  const handleTabChange = async () => {
+    const switchKey = ++todayVisitSwitchKey
+    todayVisitSwitching.value = true
+    await waitMs(120)
+    if (switchKey !== todayVisitSwitchKey) return
+
+    todayVisit.value.searchParams.page = 1
+    todayVisit.value.list = []
+    todayVisit.value.hasNextPage = false
     InitializeAll()
-    getTodayVisitList(true);               // 重新加载第一页
+    await getTodayVisitList(false, { autoSelect: true, showLoading: false })
+    if (switchKey !== todayVisitSwitchKey) return
+
+    await waitTodayVisitStableFrame()
+    if (switchKey === todayVisitSwitchKey) {
+      todayVisitSwitching.value = false
+    }
   }
 
 
@@ -789,9 +910,9 @@
     clearTimeout(patientPopoverTimer)
     patientSearchField.value = field
     if (field === 'name') {
-      todayVisit.value.list[visitInfo.value.index].PatientName=keyword
+      syncCurrentVisitListItem({ PatientName: keyword })
     } else {
-      todayVisit.value.list[visitInfo.value.index].PatientPhone=keyword
+      syncCurrentVisitListItem({ PatientPhone: keyword })
     }
     if (!keyword) {
       patientModal.value.visible = false;
@@ -855,29 +976,26 @@
   })
 
   const handleSelectPatient = (record: any) => {
-    PatientApiCtrl.VisitList({patientId:record.PatientId}).then(data=>{
-      if(data.Rows.length){
-        let info=data.Rows[0]
-        visitForm.value.PresentIllness=info.PresentIllness
-        visitForm.value.PastHistory=info.PastHistory
-        visitForm.value.AllergyHistory=info.AllergyHistory
-      }
-    })
     patientModal.value.form=cloneDeep(record)
-    todayVisit.value.list[visitInfo.value.index].PatientGender=record.Gender
-    todayVisit.value.list[visitInfo.value.index].PatientAge=record.Age
-    todayVisit.value.list[visitInfo.value.index].PatientPhone=record.Phone
+    syncCurrentVisitListItem({
+      PatientGender: record.Gender,
+      PatientAge: record.Age,
+      PatientPhone: record.Phone,
+    })
     patientModal.value.form.Id=record.PatientId
     patientModal.value.visible = false
 
-    getVisitList(record.PatientId)
+    getVisitList(record.PatientId, { syncVisitType: true, syncMedicalHistory: true })
     getPrescriptSummaryList(record.PatientId)
   }
 
   const handleClearPatient=()=>{
     visitForm.value=cloneDeep(visitFormInfo)
     patientModal.value.form = cloneDeep(initialPatientForm)
-    todayVisit.value.list[visitInfo.value.index]=cloneDeep(anonymousInfo)
+    visitOtherForm.value.VisitType = 0
+    if(todayVisit.value.list[visitInfo.value.index]){
+      todayVisit.value.list[visitInfo.value.index]=cloneDeep(anonymousInfo)
+    }
     prescriptList.value=[]
     historyList.value=[]
   }
@@ -892,8 +1010,71 @@
     saveCurrentDraft()
   }
 
+  const getCurrentTodayVisit=()=>{
+    return todayVisit.value.list[visitInfo.value.index]
+  }
+
+  const hasCompleteManualPatientInfo=()=>{
+    return Boolean(
+      patientModal.value.form.Name &&
+      patientModal.value.form.Gender &&
+      patientModal.value.form.Age &&
+      patientModal.value.form.Phone
+    )
+  }
+
+  const shouldConfirmManualQuickVisit=()=>{
+    const currentItem = getCurrentTodayVisit()
+    return !visitInfo.value.Id && !currentItem?.DraftId && hasCompleteManualPatientInfo()
+  }
+
+  const addManualPatientToTodayVisit=()=>{
+    const draftInfo = {
+      ...cloneDeep(anonymousInfo),
+      DraftId: Date.now(),
+      PatientName: patientModal.value.form.Name,
+      PatientGender: patientModal.value.form.Gender,
+      PatientAge: patientModal.value.form.Age,
+      PatientPhone: patientModal.value.form.Phone,
+      MedicalInfo: {
+        patientModal: cloneDeep(patientModal.value.form),
+        visitForm: cloneDeep(visitForm.value),
+        prescriptionList: cloneDeep(prescriptionList.value),
+        visitOtherForm: cloneDeep(visitOtherForm.value),
+      },
+    }
+    todayVisit.value.searchParams.status=1
+    todayVisit.value.searchParams.page=1
+    todayVisit.value.list.unshift(draftInfo)
+    todayVisit.value.hasNextPage=false
+    visitInfo.value.index=0
+    visitInfo.value.Id=''
+    visitInfo.value.detail={}
+    addDraftPatient(draftInfo)
+    nextTick(() => {
+      if(todayVisitListRef.value){
+        todayVisitListRef.value.scrollTop = 0
+      }
+    })
+  }
+
+  const confirmManualQuickVisit=(type)=>{
+    Modal.confirm({
+      title: '确认添加就诊人',
+      centered:true,
+      content: '当前患者信息尚未加入就诊中列表，是否确认添加患者信息并进行快速接诊？',
+      onOk() {
+        addManualPatientToTodayVisit()
+        return createOrder(type, { skipManualQuickConfirm: true })
+      },
+      onCancel() {
+        InitializeAll()
+      },
+    });
+  }
+
   // 保存患者
-  const createOrder = async (type) => {  //1暂存处方 2保存患者病历 3提交审方/开方发药
+  const createOrder = async (type, options = { skipManualQuickConfirm: false }) => {  //1暂存处方 2保存患者病历 3提交审方/开方发药
     saveType.value=type
     normalizePatientAge()
     if(!patientModal.value.form.Name){
@@ -909,6 +1090,10 @@
       return
     }
     if(!validatePatientPhone()){
+      return
+    }
+    if(!options.skipManualQuickConfirm && shouldConfirmManualQuickVisit()){
+      confirmManualQuickVisit(type)
       return
     }
     const medicalIsValid = await medicalRef.value?.handleSaveMedical()  //验证病历
@@ -1047,6 +1232,8 @@
   // 创建机构订单
   const handleCreateOrder=()=>{
     loading.value=true
+    const finishedVisitId = visitInfo.value.Id
+    const finishedPatientId = patientModal.value.form.Id
     let materialList=prescriptionList.value.map(item => {
       if (item.ProId) {
         return {
@@ -1080,16 +1267,14 @@
         let idx = storedList.findIndex(p => p.DraftId == currentItem.DraftId)
         if (idx !== -1) { storedList.splice(idx, 1); localStorage.setItem('DraftPatientList', JSON.stringify(storedList)) }
       }
-      changeFinishVisit()  //完成接诊
+      changeFinishVisit(false, finishedVisitId)  //完成接诊
 
       if(saveType.value==3){
-        if(receiptModal.value.info.PayChannel==1){
-          payModal.value.info={
-            OrderCode:data.OrderCode,
-            PayType:receiptModal.value.info.PayChannel,
-            Amount:data.Total,
-          }
-          payModal.value.visible=true
+        orderPayCountdown.value={
+          visible:true,
+          orderCode:data.OrderCode,
+          visitId:finishedVisitId,
+          patientId:finishedPatientId,
         }
       }else if(saveType.value==1){
         Modal.confirm({
@@ -1104,10 +1289,44 @@
   }
 
   // 完成接诊
-  const changeFinishVisit=()=>{
-    PrescriptApiCtrl.FinishVisit({id:visitInfo.value.Id}).then(data=>{
-      getTodayVisitList()
+  const changeFinishVisit=(refresh = true, id = visitInfo.value.Id)=>{
+    return PrescriptApiCtrl.FinishVisit({id}).then(data=>{
+      if(refresh){
+        return getTodayVisitList()
+      }
+      return data
     }).catch(() => {})
+  }
+
+  const goChargePayment=()=>{
+    const orderCode = orderPayCountdown.value.orderCode
+    orderPayCountdown.value.visible=false
+    if(orderCode){
+      go('/charge/pendingPay?orderCode=' + encodeURIComponent(orderCode) + '&autoPay=1')
+    }
+  }
+
+  const getVisitPatientId=(item)=>{
+    return item?.PatientId || item?.PatientID || item?.Patient?.PatientId || item?.Patient?.Id || ''
+  }
+
+  const cancelChargePaymentCountdown=async()=>{
+    const targetVisitId = orderPayCountdown.value.visitId
+    const targetPatientId = orderPayCountdown.value.patientId
+    orderPayCountdown.value.visible=false
+    todayVisit.value.searchParams.status=null
+    todayVisit.value.searchParams.page=1
+    todayVisit.value.list=[]
+    todayVisit.value.hasNextPage=false
+    await getTodayVisitList(false, { autoSelect: false })
+    const targetIndex = todayVisit.value.list.findIndex(item => {
+      return (targetVisitId && item.Id==targetVisitId) || (targetPatientId && getVisitPatientId(item)==targetPatientId)
+    })
+    if(targetIndex>=0){
+      seleceVisit(todayVisit.value.list[targetIndex], targetIndex)
+    }else if(todayVisit.value.list.length){
+      seleceVisit(todayVisit.value.list[0], 0)
+    }
   }
 
   const seeRootExtraction=()=>{
@@ -1134,6 +1353,77 @@
 .otherCard ::v-deep(.ant-card-body){
   height: calc(100% - 48px) !important;
 }
+.visit-history-card {
+  :deep(.ant-card-body) {
+    padding: 12px 12px 8px;
+  }
+}
+.visit-history-steps {
+  :deep(.ant-steps-item) {
+    padding-bottom: 4px;
+  }
+
+  :deep(.ant-steps-item-content) {
+    width: calc(100% - 26px);
+    min-height: 0;
+  }
+
+  :deep(.ant-steps-item-title) {
+    width: 100%;
+    padding-right: 0;
+    line-height: normal;
+
+    &::after {
+      display: none;
+    }
+  }
+
+  :deep(.ant-steps-item-description) {
+    min-height: 0;
+  }
+}
+.visit-history-item {
+  width: 100%;
+  padding: 8px 10px 9px;
+  border-bottom: 1px dashed #E8EEF7;
+  border-radius: 8px;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    border-color: #D7E4F8;
+    background: #F9FBFD;
+    box-shadow: 0 0 0 2px fade(@primary-color, 10%), 0 4px 10px rgba(32, 48, 75, 0.05);
+  }
+}
+.visit-history-item__main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.visit-history-item__diagnosis {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: #1F2B3D;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 22px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.visit-history-item__tag {
+  flex: 0 0 auto;
+  margin-right: 0;
+  font-size: 12px;
+}
+.visit-history-item__time {
+  margin-top: 5px;
+  color: #6C7583;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 18px;
+}
 .ant-input {
   &-number,
   &-number-group-wrapper {
@@ -1156,6 +1446,18 @@
     justify-content: center;
     margin: 0;
   }
+
+  :deep(.ant-tabs-nav-operations),
+  :deep(.ant-tabs-nav-more) {
+    display: none !important;
+  }
+}
+.today-visit-content-panel {
+  transition: opacity 160ms ease-out;
+}
+.today-visit-content-switching {
+  opacity: 0;
+  pointer-events: none;
 }
 .patient-info-card {
   border: 1px solid transparent;
@@ -1229,6 +1531,45 @@
 
   :deep(.anticon) {
     cursor: pointer;
+  }
+}
+.patient-action-card {
+  overflow: visible;
+}
+.patient-action-field {
+  position: relative;
+
+  &::after {
+    position: absolute;
+    top: -9px;
+    right: -8px;
+    bottom: -9px;
+    left: -8px;
+    z-index: 1;
+    border: 1px solid transparent;
+    pointer-events: none;
+    content: '';
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  &:hover,
+  &:focus-within {
+    &::after {
+      border-color: @primary-color;
+      box-shadow: 0 0 0 2px fade(@primary-color, 20%);
+    }
+  }
+}
+.patient-id-card-action {
+  &::after {
+    left: -8px;
+    border-radius: 8px 0 0 8px;
+  }
+}
+.patient-add-action {
+  &::after {
+    right: -8px;
+    border-radius: 0 8px 8px 0;
   }
 }
 .visit-type-field,

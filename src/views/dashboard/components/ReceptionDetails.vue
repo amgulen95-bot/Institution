@@ -36,7 +36,7 @@
       </a-descriptions>
     </div>
 
-    <a-card class="mt16px">
+    <a-card class="mt16px completed-prescription-card">
       <div class="flex justify-between align-center flex-wrap">
         <div class="text-18px text-bold">
           <img class="w28px h28px" src="../../../assets/images/yaofang.png" alt="">
@@ -68,23 +68,67 @@
               <div class="color-[#565E74]">共{{item.Materials.length}}味药</div>
             </div>
           </div>
-          <div class="flex align-center flex-wrap gap12px">
-            <div class="flex justify-between align-center border border-rd-4px border-color-[#E9ECEF] py7px px12px mt12px" v-for="(p,i) in item.Materials" :key="i">
-              <div>{{ p.Name }}</div>
+          <div class="pt24px pb12px">
+            <a-space :size="[24, 12]" wrap>
+              <div class="readonly-material-card flex justify-between align-center border border-rd-4px border-color-[#E9ECEF] pt7px pb7px pr12px pl5px position-relative" v-for="(p,i) in item.Materials" :key="i">
+              <div class="readonly-material-name">{{ materialName(p) }}</div>
               <a-divider type="vertical" />
-              <div>{{ p.Weight }}</div>
-              <div>{{ p.Unit }}</div>
-            </div>
+              <div class="readonly-material-weight">{{ materialWeight(p) }}</div>
+              <span>g</span>
+              </div>
+            </a-space>
           </div>
-          <div class="flex align-center gap12px mt12px whitespace-nowrap">
-            <div class="border-rd-4px bg-[#F6F8FC] text-bold p8px">{{item.Detail.Count}}剂</div>
-            <div class="border-rd-4px bg-[#F6F8FC] text-bold p8px">剂型：{{ item.Detail.Unit }}</div>
-            <div class="border-rd-4px bg-[#F6F8FC] text-bold p8px">用法：{{ item.Detail.UseMethod }}</div>
-            <div class="border-rd-4px bg-[#F6F8FC] text-bold p8px">每日次数：{{ item.Detail.DailyFrequency }}</div>
-            <div class="border-rd-4px bg-[#F6F8FC] text-bold p8px">单次剂量：{{ item.Detail.PerDoseAmount }}</div>
-            <div class="border-rd-4px bg-[#F6F8FC] text-bold p8px">剂量单位：{{ item.Detail.DoseUnit }}</div>
-            <div class="border-rd-4px bg-[#F6F8FC] text-bold p8px">用药时间：{{ item.Detail.TakeTime }}</div>
-            <div class="border-rd-4px bg-[#F6F8FC] text-bold p8px">用药天数：{{ item.Detail.TimeFrame }}</div>
+          <div class="prescription-detail-plan">
+            <div class="medicine-plan-bar">
+              <div class="medicine-plan-item medicine-plan-item-count">
+                <div class="medicine-plan-field medicine-plan-field-count medicine-plan-field-filled flex align-center text-bold">
+                  <span class="medicine-plan-number">{{ doseCountText(item.Detail) }}</span>
+                  <span>剂</span>
+                </div>
+              </div>
+              <div class="medicine-plan-item medicine-plan-item-dosage">
+                <div class="medicine-plan-field medicine-plan-field-dosage medicine-plan-field-filled flex align-center text-bold">
+                  <span>剂型：</span>
+                  <span>{{ dosageFormText(item.Detail) }}</span>
+                </div>
+              </div>
+              <div class="medicine-plan-item medicine-plan-item-method">
+                <div class="medicine-plan-field medicine-plan-field-method medicine-plan-field-filled flex align-center text-bold">
+                  <span>{{ useMethodText(item.Detail) }}</span>
+                </div>
+              </div>
+              <div class="medicine-plan-item medicine-plan-item-frequency">
+                <div class="medicine-plan-field medicine-plan-field-frequency medicine-plan-field-filled flex align-center text-bold">
+                  <span>每日次数：</span>
+                  <span>{{ frequencyText(item.Detail) }}</span>
+                </div>
+              </div>
+              <div class="medicine-plan-item medicine-plan-item-each-dose">
+                <div class="medicine-plan-field medicine-plan-field-each-dose medicine-plan-field-filled flex align-center text-bold">
+                  <span>单次剂量：</span>
+                  <span>{{ eachDoseText(item.Detail) }}</span>
+                </div>
+              </div>
+              <div class="medicine-plan-item medicine-plan-item-unit">
+                <div class="medicine-plan-field medicine-plan-field-unit medicine-plan-field-filled flex align-center text-bold">
+                  <span>剂量单位：</span>
+                  <span>{{ doseUnitText(item.Detail) }}</span>
+                </div>
+              </div>
+              <div class="medicine-plan-item medicine-plan-item-time">
+                <div class="medicine-plan-field medicine-plan-field-time medicine-plan-field-filled flex align-center text-bold">
+                  <span>用药时间：</span>
+                  <span>{{ takeTimeText(item.Detail) }}</span>
+                </div>
+              </div>
+              <div class="medicine-plan-item medicine-plan-item-days">
+                <div class="medicine-plan-field medicine-plan-field-days medicine-plan-field-filled flex align-center text-bold">
+                  <span>用药天数：</span>
+                  <span>{{ takeDaysText(item.Detail) }}</span>
+                  <span v-if="takeDaysText(item.Detail)">天</span>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="border-rd-8px border border-color-[#F3F4F7] flex p16px mt12px">
             <div class="text-bold whitespace-nowrap line-height-22px">服药建议/备注</div>
@@ -107,6 +151,177 @@
   })
   const defaultValue=ref(1)
 
+  const normalizeNumberText = (value) => {
+    if (value === null || value === undefined || value === '') return ''
+    const matched = String(value).match(/\d+(\.\d+)?/)
+    return matched ? matched[0] : String(value)
+  }
+
+  const firstText = (...values) => {
+    const value = values.find(item => item !== null && item !== undefined && item !== '')
+    return value === undefined ? '' : String(value)
+  }
+
+  const materialName = (item) => firstText(item.MaterialName, item.Name)
+  const materialWeight = (item) => normalizeNumberText(firstText(item.Weight, item.Count, item.Quantity))
+  const doseCountText = (detail) => normalizeNumberText(firstText(detail.Count, detail.DoseCount)) || '1'
+  const dosageFormText = (detail) => firstText(detail.MedicineTypeName, detail.Unit, detail.DosageFormName)
+  const useMethodText = (detail) => firstText(detail.UseMethodName, detail.UseMethod)
+  const frequencyText = (detail) => firstText(detail.DailyFrequencyName, detail.FrequencyName, detail.DailyFrequency, detail.Frequency, detail.Dosage)
+  const eachDoseText = (detail) => normalizeNumberText(firstText(detail.PerDoseAmount, detail.EachDose))
+  const doseUnitText = (detail) => firstText(detail.DoseUnitName, detail.DoseUnit)
+  const takeTimeText = (detail) => firstText(detail.TakeTimeName, detail.TakeTime)
+  const takeDaysText = (detail) => normalizeNumberText(firstText(detail.CertNumber, detail.TimeFrame, detail.TakeDays))
+
 </script>
 <style lang="less" scoped>
+.completed-prescription-card {
+  :deep(.ant-select) {
+    pointer-events: none;
+  }
+}
+
+.readonly-material-card {
+  width: 286px;
+  min-height: 40px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover,
+  &:focus-within {
+    border-color: @primary-color;
+    box-shadow: 0 0 0 2px rgba(10, 90, 255, 0.08);
+  }
+}
+
+.readonly-material-name {
+  width: 180px;
+  padding: 0 7px;
+  overflow: hidden;
+  color: #313947;
+  font-size: 14px;
+  line-height: 24px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.readonly-material-weight {
+  width: 50px;
+  min-width: 50px;
+  padding: 0 7px;
+  color: #313947;
+  font-size: 14px;
+  line-height: 24px;
+  text-align: right;
+}
+
+.prescription-detail-plan {
+  overflow-x: auto;
+  overflow-y: visible;
+  margin-top: 12px;
+  padding: 0 8px 8px 0;
+  scrollbar-width: thin;
+
+  .medicine-plan-bar {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    min-width: max-content;
+    overflow: visible;
+    border: 1px solid #c8d6f3;
+    border-radius: 8px;
+    background: #E1EBFF;
+  }
+
+  .medicine-plan-item {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex: 0 0 auto;
+    align-items: stretch;
+    min-height: 34px;
+    margin-bottom: 0 !important;
+    background: #E1EBFF;
+
+    &::after {
+      position: absolute;
+      top: 7px;
+      right: 0;
+      bottom: 7px;
+      width: 0;
+      border-right: 1px dashed #9fb3d9;
+      content: '';
+      pointer-events: none;
+    }
+
+    &:last-child::after {
+      display: none;
+    }
+  }
+
+  .medicine-plan-field {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 34px;
+    padding: 5px 8px !important;
+    overflow: hidden;
+    color: #313947;
+    font-size: 14px;
+    font-weight: 500 !important;
+    line-height: 22px;
+    background: transparent !important;
+    border: 0;
+    border-radius: 0 !important;
+    box-shadow: none;
+    cursor: default;
+
+    > span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .medicine-plan-field-filled {
+    color: #1F2B3D;
+  }
+
+  .medicine-plan-number {
+    display: inline-block;
+    width: 32px;
+    text-align: right;
+  }
+
+  .medicine-plan-item-count {
+    width: 80px;
+  }
+
+  .medicine-plan-item-dosage {
+    width: 180px;
+  }
+
+  .medicine-plan-item-method {
+    width: 138px;
+  }
+
+  .medicine-plan-item-frequency {
+    width: 208px;
+  }
+
+  .medicine-plan-item-each-dose {
+    width: 134px;
+  }
+
+  .medicine-plan-item-unit {
+    width: 164px;
+  }
+
+  .medicine-plan-item-time {
+    width: 240px;
+  }
+
+  .medicine-plan-item-days {
+    width: 156px;
+  }
+}
 </style>
