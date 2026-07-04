@@ -74,6 +74,8 @@ const MATERIAL_VISIBLE_PAGE_SIZE = 8;
 const MATERIAL_POPOVER_SAFE_HEIGHT = 430;
 const MATERIAL_POPOVER_SHOW_DELAY = 120;
 const MATERIAL_POPOVER_CLOSE_DELAY = 120;
+const MATERIAL_POPOVER_SCROLL_GAP = 16;
+const MATERIAL_POPOVER_SCROLL_WAIT = 220;
 const MATERIAL_ACTIVE_EVENT = 'material-input-active';
 let materialRequestKey = 0;
 let showPopoverTimer: any = null;
@@ -123,7 +125,10 @@ const fetchMaterialList = async (page: number, pageSize: number, keyword: string
     list.value = nextRows;
     total.value = nextTotal;
     await nextTick();
-    showPopoverTimer = setTimeout(() => {
+    showPopoverTimer = setTimeout(async () => {
+      if (currentRequestKey === materialRequestKey && list.value.length > 0) {
+        await ensurePopoverSpace();
+      }
       if (currentRequestKey === materialRequestKey) {
         visible.value = list.value.length > 0;
       }
@@ -207,6 +212,46 @@ const handlePageChange = (page: number, pageSize: number) => {
   fetchMaterialList(page, pageSize, keyword);
 };
 
+const wait = (delay: number) => new Promise<void>((resolve) => setTimeout(resolve, delay));
+
+const getInputTriggerNode = () => {
+  const componentInstance = inputRefsMap.value.get(props.selfIndex);
+  return componentInstance?.$el as HTMLElement | undefined;
+};
+
+const ensurePopoverSpace = async () => {
+  const triggerNode = getInputTriggerNode();
+  if (!triggerNode) return;
+
+  const scrollContainer = document.querySelector('.receptionPanel') as HTMLElement | null;
+  const triggerRect = triggerNode.getBoundingClientRect();
+  const containerRect = scrollContainer?.getBoundingClientRect();
+  const viewportBottom = containerRect?.bottom ?? window.innerHeight;
+  const availableBelow = viewportBottom - triggerRect.bottom;
+  const requiredBelow = MATERIAL_POPOVER_SAFE_HEIGHT + MATERIAL_POPOVER_SCROLL_GAP;
+
+  if (availableBelow >= requiredBelow) return;
+
+  const scrollDistance = requiredBelow - availableBelow;
+
+  if (scrollContainer) {
+    const maxScrollTop = scrollContainer.scrollHeight - scrollContainer.clientHeight;
+    const nextTop = Math.min(maxScrollTop, scrollContainer.scrollTop + scrollDistance);
+    if (nextTop > scrollContainer.scrollTop) {
+      scrollContainer.scrollTo({ top: nextTop, behavior: 'smooth' });
+      await wait(MATERIAL_POPOVER_SCROLL_WAIT);
+    }
+    return;
+  }
+
+  const maxWindowScrollTop = document.documentElement.scrollHeight - window.innerHeight;
+  const nextWindowTop = Math.min(maxWindowScrollTop, window.scrollY + scrollDistance);
+  if (nextWindowTop > window.scrollY) {
+    window.scrollTo({ top: nextWindowTop, behavior: 'smooth' });
+    await wait(MATERIAL_POPOVER_SCROLL_WAIT);
+  }
+};
+
 const focusWeightInput = async () => {
   await nextTick();
   const inputInstance = weightInputRef.value;
@@ -252,22 +297,6 @@ const handlePopoverChange = (val: boolean) => {
     clearTimeout(showPopoverTimer);
     list.value = [];
     total.value = 0;
-  } else {
-    const componentInstance = inputRefsMap.value.get(props.selfIndex);
-    if (!componentInstance) return;
-    const triggerNode = componentInstance.$el;
-    if (!triggerNode) return;
-    const rect = triggerNode.getBoundingClientRect();
-    const scrollContainer = document.querySelector('.receptionPanel');
-    const containerHeight = scrollContainer ? scrollContainer.clientHeight : window.innerHeight;
-    if (rect.bottom > containerHeight - MATERIAL_POPOVER_SAFE_HEIGHT) {
-      if (scrollContainer) {
-        scrollContainer.scrollTo({
-          top: scrollContainer.scrollTop + 300,
-          behavior: 'smooth'
-        });
-      }
-    }
   }
 };
 

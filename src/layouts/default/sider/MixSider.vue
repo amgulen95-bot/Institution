@@ -105,6 +105,7 @@
   import { listenerRouteChange } from '@/logics/mitt/routeChange';
   import LayoutTrigger from '../trigger/index.vue';
   import { createAsyncComponent } from '@/utils/factory/createAsyncComponent';
+  import { waitForPageTransitionReady } from '@/utils/http/axios/pageRequestTracker';
 
   const SimpleMenuTag = createAsyncComponent(
     () => import('@/components/SimpleMenu/src/SimpleMenuTag.vue'),
@@ -203,8 +204,12 @@
     },
   );
 
-  listenerRouteChange((route) => {
+  listenerRouteChange(async (route) => {
     currentRoute.value = route;
+    await waitForPageTransitionReady();
+    if (currentRoute.value?.fullPath !== route.fullPath) {
+      return;
+    }
     setActive(true);
     if (unref(getCloseMixSidebarOnChange)) {
       closeMenu();

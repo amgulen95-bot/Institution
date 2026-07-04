@@ -7,11 +7,11 @@ export interface DefaultContext {
 }
 
 export function getTransitionName({
-  route,
-  openCache,
-  cacheTabs,
+  route: _route,
+  openCache: _openCache,
+  cacheTabs: _cacheTabs,
   enableTransition,
-  def,
+  def: _def,
 }: Pick<DefaultContext, 'route'> & {
   enableTransition: boolean;
   openCache: boolean;
@@ -22,12 +22,5 @@ export function getTransitionName({
     return undefined;
   }
 
-  const isInCache = cacheTabs.includes(route.name as string);
-  const transitionName = 'fade-slide';
-  let name: string | undefined = transitionName;
-
-  if (openCache) {
-    name = isInCache && route.meta.loaded ? transitionName : undefined;
-  }
-  return name || (route.meta.transitionName as string) || def;
+  return 'soft-page';
 }

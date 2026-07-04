@@ -3,7 +3,7 @@
     <div class="flex justify-between align-center pt16px pb8px pl16px pr16px">
       <div class="text-16px text-bold ">当前病历</div>
       <a-space :size="8">
-        <a-button @click="medicalVisible=true">常用模板</a-button>
+        <a-button class="medical-system-radius-btn" @click="medicalVisible=true">常用模板</a-button>
         <a-tooltip @click="handleTemplate">
           <template #title>保存为模板</template>
           <img class="w32px h32px pointer" src="../../../assets/images/templateIcon.png" alt="">
@@ -16,7 +16,7 @@
           <a-form-item name="ChiefComplaint">
             <a-popover placement="bottomLeft" v-model:open="quickPanel.ChiefComplaint.visible" trigger="click">
               <template #content>
-                <div class="w900px" @mousedown.prevent @mouseleave="quickPanel.ChiefComplaint.visible=false">
+                <div class="w900px" @mousedown.prevent @mouseleave="handleChiefComplaintMouseLeave">
                   <div v-for="(item,index) in quickPanel.ChiefComplaint.list" :key="index">
                     <div class="flex align-center flex-wrap gap12px">
                       <div class="pointerTag" v-for="(p,i) in item.list1" :key="i" @click="handleChiefComplaintListClick(p)">{{ p }}</div>
@@ -397,6 +397,7 @@
       xuetang:{name:'血糖',type:2,unit:'mmol/L'}
     },
   })
+  let chiefComplaintOpenedAt = 0
   const templateInfo=ref({
     ChiefComplaint:'',
     PresentIllness:'',
@@ -437,6 +438,11 @@
       }).finally(() => {
         diagnosisPopover.value.loading = false
       })
+    }
+  })
+  watch(() => quickPanel.value.ChiefComplaint.visible, (val) => {
+    if (val) {
+      chiefComplaintOpenedAt = Date.now()
     }
   })
 
@@ -544,6 +550,13 @@
     visitForm.value.ChiefComplaint = items.length > 0
       ? items.join('，') + '，' + value
       : value
+  }
+
+  const handleChiefComplaintMouseLeave = () => {
+    if (Date.now() - chiefComplaintOpenedAt < 250) {
+      return
+    }
+    quickPanel.value.ChiefComplaint.visible = false
   }
 
   const handlePresentIllnessListClick = (value: string) => {
@@ -719,8 +732,10 @@
 }
 .MedicalPage :deep(.ant-form-item-explain){
   position: absolute;
-  left: 0;
-  top: 100%;
+  left: auto;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 4;
   min-height: auto;
   line-height: 16px;
@@ -729,7 +744,7 @@
 }
 .MedicalPage :deep(.ant-form-item-explain-error){
   display: inline-block;
-  padding: 0 4px;
+  padding: 1px 6px;
   background: #fff;
   border-radius: 4px;
   white-space: nowrap;
@@ -753,14 +768,35 @@
 }
 .MedicalPage :deep(.ant-descriptions-item-content){
   border-inline-start:1px solid #f0f0f0;
-}
-.ant-descriptions-item-content {
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   border: 1px solid #f0f0f0 !important;
+  box-sizing: border-box;
+  position: relative;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.MedicalPage :deep(.ant-descriptions-item-content::after){
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: 2;
+  pointer-events: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.MedicalPage :deep(.ant-descriptions-item-content textarea.ant-input){
+  min-height: 22px !important;
+  line-height: 22px;
+  overflow: hidden;
+  resize: none;
 }
 .MedicalPage :deep(.ant-descriptions-item-content:hover),
 .MedicalPage :deep(.ant-descriptions-item-content:focus-within){
+  z-index: 3;
   border: 1px solid #0A5AFF !important;
+}
+.MedicalPage :deep(.ant-descriptions-item-content:hover::after),
+.MedicalPage :deep(.ant-descriptions-item-content:focus-within::after){
+  border-color: #0A5AFF;
   box-shadow: 0 0 0 2px fade(@primary-color, 16%), 0 4px 10px rgba(32, 48, 75, 0.06);
 }
 .medicalPanel :deep(.ant-input){
@@ -784,5 +820,8 @@
 }
 .medical-quick-close:hover {
   background-color: #EEF5FF !important;
+}
+.medical-system-radius-btn {
+  border-radius: 8px !important;
 }
 </style>

@@ -5,7 +5,7 @@
         <div class="text-18px text-bold">今日接诊</div>
         <div class="flex align-center mt16px mb12px">
           <a-input-search v-model:value="todayVisit.searchParams.keyword" placeholder="搜索患者姓名、手机号" @search="handleTabChange" />
-          <a-button class="ml12px" type="primary" @click="handleQuick">
+          <a-button class="ml12px dashboard-system-radius-btn" type="primary" @click="handleQuick">
             <template #icon><PlusOutlined /></template>
             快速接诊
           </a-button>
@@ -53,7 +53,7 @@
         <template v-if="visitInfo.detail.Visit?.VisitStatus!=2">
           <div class="flex justify-between align-center flex-wrap">
             <div class="flex justify-between align-center flex-wrap">
-              <a-space class="pt2px pb2px pl16px pr16px bg-[#fff] border-rd-8px mb8px" :size="24">
+              <a-space class="patient-info-card pt2px pb2px pl16px pr16px bg-[#fff] border-rd-8px mb8px" :size="24">
                 <a-popover v-model:open="patientModal.visible" placement="bottomLeft" trigger="focus" :destroyTooltipOnHide="false" >
                   <template #content>
                     <div class="w650px">
@@ -83,7 +83,6 @@
               <a-space class="pt8px pb8px pl16px pr16px bg-[#fff] border-rd-8px ml8px mb8px" :size="16">
                 <div class="flex align-center pointer">
                   <img class="w20px h20px" src="../../assets/images/idCard.png" alt="">
-                  <span class="ml4px whitespace-nowrap">读取身份证</span>
                 </div>
                 <a-divider type="vertical" />
                 <div class="flex align-center pointer" @click="addPatientVisible=true">
@@ -93,15 +92,19 @@
               </a-space>
             </div>
             <div class="flex align-center pt2px pb2px pl4px pr4px bg-[#fff] border-rd-8px mb8px" :size="16">
-              <a-select class="w80px" v-model:value="visitOtherForm.VisitType" placeholder="问诊类型" :bordered="false">
-                <a-select-option :value="0">初诊</a-select-option>
-                <a-select-option :value="1">复诊</a-select-option>
-              </a-select>
+              <div class="flex align-center visit-type-field">
+                <a-select class="w80px" v-model:value="visitOtherForm.VisitType" placeholder="问诊类型" :bordered="false">
+                  <a-select-option :value="0">初诊</a-select-option>
+                  <a-select-option :value="1">复诊</a-select-option>
+                </a-select>
+              </div>
               <a-divider type="vertical" />
-              <div class="flex align-center ml8px">
-                <span>挂号费：</span>
-                <span class="text-bold text-theme">￥</span>
-                <a-input-number id="inputNumber" class="text-bold text-theme" size="small" :controls="false" v-model:value="visitOtherForm.RegistrationFee" :bordered="false" :min="0" @change="changeRegistrationFee" />
+              <div class="registration-fee-outer">
+                <div class="flex align-center">
+                  <span>挂号费：</span>
+                  <span class="text-bold text-theme registration-fee-currency">￥</span>
+                  <a-input-number id="inputNumber" class="text-bold text-theme registration-fee-input" size="small" :controls="false" v-model:value="visitOtherForm.RegistrationFee" :bordered="false" :min="0" @change="changeRegistrationFee" @focus="selectRegistrationFee" @click="selectRegistrationFee" />
+                </div>
               </div>
             </div>
           </div>
@@ -269,7 +272,7 @@
     <a-card class="mt16px" v-if="visitInfo.detail.Visit?.VisitStatus!=2">
       <div class="flex justify-between align-center">
         <a-space>
-          <a-button type="primary" ghost @click="seeFeeDetail">费用明细</a-button>
+          <a-button class="dashboard-system-radius-btn" type="primary" ghost @click="seeFeeDetail">费用明细</a-button>
           <div class="ml24px">
             <span class="color-[#4E5766]">药费：</span>
             <span class="text-theme text-12px text-bold">￥</span>
@@ -289,10 +292,10 @@
           </div>
         </a-space>
         <a-space :size="12">
-          <a-button type="primary" danger ghost @click="clearPrescript">清空处方</a-button>
-          <a-button type="primary" ghost @click="createOrder(1)">暂存处方</a-button>
-          <a-button type="primary" ghost @click="createOrder(2)">保存患者病历</a-button>
-          <a-button type="primary" @click="createOrder(3)">提交审方/开方发药</a-button>
+          <a-button class="dashboard-system-radius-btn" type="primary" danger ghost @click="clearPrescript">清空处方</a-button>
+          <a-button class="dashboard-system-radius-btn" type="primary" ghost @click="createOrder(1)">暂存处方</a-button>
+          <a-button class="dashboard-system-radius-btn" type="primary" ghost @click="createOrder(2)">保存患者病历</a-button>
+          <a-button class="dashboard-system-radius-btn" type="primary" @click="createOrder(3)">提交审方/开方发药</a-button>
         </a-space>
       </div>
     </a-card>
@@ -880,6 +883,13 @@
     }
   }
 
+  const selectRegistrationFee=(event)=>{
+    nextTick(() => {
+      const input = event?.target?.closest?.('.ant-input-number')?.querySelector?.('input') || event?.target
+      input?.select?.()
+    })
+  }
+
   // 查看费用明细
   const seeFeeDetail= ()=>{
     handleCalculateFee(true)
@@ -941,7 +951,14 @@
     loading.value=true
     let materialList=prescriptionList.value.map(item => {
       if (item.ProId) {
-        return { ProId: item.ProId, Count: item.DoseCount }
+        return {
+          ProId: item.ProId,
+          Count: item.DoseCount,
+          Frequency: item.Frequency,
+          EachDose: item.EachDose,
+          TakeTime: item.TakeTime,
+          TakeDays: item.TakeDays
+        }
       }
       const validMaterials = item.Materials.filter(material => material.MaterialId != null)
       return {
@@ -1030,5 +1047,61 @@
 .activeTag{
   background: #F9FBFD;
   box-shadow: 4px 0 0 0 #0A5AFF inset;
+}
+.patient-info-card {
+  border: 1px solid transparent;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover,
+  &:focus-within {
+    border-color: @primary-color;
+    box-shadow: 0 0 0 2px fade(@primary-color, 20%);
+  }
+}
+.visit-type-field,
+.registration-fee-outer {
+  border-radius: 4px;
+  border: 1px solid transparent;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover,
+  &:focus-within {
+    border-color: @primary-color;
+    box-shadow: 0 0 0 2px fade(@primary-color, 20%);
+  }
+}
+.visit-type-field {
+  align-self: stretch;
+  margin: 0;
+  border-radius: 8px 0 0 8px;
+}
+.registration-fee-outer {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  margin: 0 0 0 8px;
+  padding: 2px 4px 2px 8px;
+  border-radius: 0 8px 8px 0;
+}
+.registration-fee-currency {
+  font-size: 14px;
+  line-height: 1;
+}
+.registration-fee-input {
+  width: 34px !important;
+  min-width: 34px !important;
+  font-size: 14px;
+  font-weight: 700;
+  color: @primary-color;
+
+  :deep(.ant-input-number-input) {
+    color: @primary-color;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+  }
+}
+.dashboard-system-radius-btn {
+  border-radius: 8px !important;
 }
 </style>

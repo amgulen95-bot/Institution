@@ -3,19 +3,20 @@
     class="full-loading"
     :class="{ absolute, [`${theme}`]: !!theme }"
     :style="[background ? `background-color: ${background}` : '']"
-    v-show="loading"
+    v-show="getVisible"
   >
-    <Spin v-bind="$attrs" :tip="tip" :size="size" :spinning="loading" />
+    <Spin v-bind="$attrs" :tip="tip" :size="size" :spinning="getVisible" />
   </section>
 </template>
 <script lang="ts" setup>
+  import { computed, onUnmounted, ref, watch } from 'vue';
   import type { PropType } from 'vue';
   import { Spin } from 'ant-design-vue';
   import { SizeEnum } from '@/enums/sizeEnum';
 
   defineOptions({ name: 'Loading' });
 
-  defineProps({
+  const props = defineProps({
     tip: {
       type: String as PropType<string>,
       default: '',
@@ -41,6 +42,30 @@
     theme: {
       type: String as PropType<'dark' | 'light'>,
     },
+  });
+
+  let delayTimer: TimeoutHandle;
+  const delayedLoading = ref(false);
+  const getVisible = computed(() => props.loading && delayedLoading.value);
+
+  watch(
+    () => props.loading,
+    (loading) => {
+      clearTimeout(delayTimer);
+      if (!loading) {
+        delayedLoading.value = false;
+        return;
+      }
+
+      delayTimer = setTimeout(() => {
+        delayedLoading.value = true;
+      }, 180);
+    },
+    { immediate: true },
+  );
+
+  onUnmounted(() => {
+    clearTimeout(delayTimer);
   });
 </script>
 <style lang="less" scoped>

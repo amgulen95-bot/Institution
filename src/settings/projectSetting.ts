@@ -144,14 +144,14 @@ const setting: ProjectConfig = {
   transitionSetting: {
     //  Whether to open the page switching animation
     // The disabled state will also disable pageLoading
-    enable: false,
+    enable: true,
 
     // Route basic switching animation
     basicTransition: RouterTransitionEnum.FADE_SIDE,
 
     // Whether to open page switching loading
     // Only open when enable=true
-    openPageLoading: true,
+    openPageLoading: false,
 
     // Whether to open the top progress bar
     openNProgress: false,

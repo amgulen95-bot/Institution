@@ -8,6 +8,7 @@ import { useMenuSetting } from '@/hooks/setting/useMenuSetting';
 import { getChildrenMenus, getCurrentParentPath, getMenus, getShallowMenus } from '@/router/menus';
 import { usePermissionStore } from '@/store/modules/permission';
 import { useAppInject } from '@/hooks/web/useAppInject';
+import { waitForPageTransitionReady } from '@/utils/http/axios/pageRequestTracker';
 
 export function useSplitMenu(splitType: Ref<MenuSplitTyeEnum>) {
   // Menu array
@@ -37,6 +38,8 @@ export function useSplitMenu(splitType: Ref<MenuSplitTyeEnum>) {
     [() => unref(currentRoute).path, () => unref(splitType)],
     async ([path]: [string, MenuSplitTyeEnum]) => {
       if (unref(splitNotLeft) || unref(getIsMobile)) return;
+      await waitForPageTransitionReady();
+      if (unref(currentRoute).path !== path) return;
 
       const { meta } = unref(currentRoute);
       const currentActiveMenu = meta.currentActiveMenu as string;

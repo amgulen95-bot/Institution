@@ -13,6 +13,7 @@ import { AxiosCanceler } from './axiosCancel';
 import { isFunction } from '@/utils/is';
 import { cloneDeep } from 'lodash-es';
 import { ContentTypeEnum, RequestEnum } from '@/enums/httpEnum';
+import { markPageRequestEnd, markPageRequestStart } from './pageRequestTracker';
 
 export * from './axiosTransform';
 
@@ -88,6 +89,7 @@ export class VAxios {
 
     // Request interceptor configuration processing
     this.axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+      markPageRequestStart();
       // If cancel repeat request is turned on, then cancel repeat request is prohibited
       const requestOptions =
         (config as unknown as any).requestOptions ?? this.options.requestOptions;
@@ -108,6 +110,7 @@ export class VAxios {
 
     // Response result interceptor processing
     this.axiosInstance.interceptors.response.use((res: AxiosResponse<any>) => {
+      markPageRequestEnd();
       res && axiosCanceler.removePending(res.config);
       if (responseInterceptors && isFunction(responseInterceptors)) {
         res = responseInterceptors(res);
@@ -119,6 +122,7 @@ export class VAxios {
     responseInterceptorsCatch &&
       isFunction(responseInterceptorsCatch) &&
       this.axiosInstance.interceptors.response.use(undefined, (error) => {
+        markPageRequestEnd();
         return responseInterceptorsCatch(axiosInstance, error);
       });
   }

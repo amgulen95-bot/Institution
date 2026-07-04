@@ -1,5 +1,5 @@
 <template>
-  <div :class="[prefixCls, getLayoutContentMode]" v-loading="getOpenPageLoading && getPageLoading">
+  <div :class="[prefixCls, getLayoutContentMode]">
     <div :class="[prefixClsScroll]">
       <PageLayout />
     </div>
@@ -9,15 +9,13 @@
   import PageLayout from '@/layouts/page/index.vue';
   import { useDesign } from '@/hooks/web/useDesign';
   import { useRootSetting } from '@/hooks/setting/useRootSetting';
-  import { useTransitionSetting } from '@/hooks/setting/useTransitionSetting';
   import { useContentViewHeight } from './useContentViewHeight';
 
   defineOptions({ name: 'LayoutContent' });
 
   const { prefixCls } = useDesign('layout-content');
   const { prefixCls: prefixClsScroll } = useDesign('layout-content-scroll');
-  const { getOpenPageLoading } = useTransitionSetting();
-  const { getLayoutContentMode, getPageLoading } = useRootSetting();
+  const { getLayoutContentMode } = useRootSetting();
 
   useContentViewHeight();
 </script>
@@ -44,5 +42,10 @@
       z-index: @page-loading-z-index;
       top: 200px;
     }
+  }
+
+  .@{prefix-cls-scroll} {
+    min-height: 100%;
+    background-color: @content-bg;
   }
 </style>

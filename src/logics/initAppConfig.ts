@@ -26,6 +26,13 @@ export function initAppConfigStore() {
   const appStore = useAppStore();
   let projCfg: ProjectConfig = Persistent.getLocal(PROJ_CFG_KEY) as ProjectConfig;
   projCfg = deepMerge(projectSetting, projCfg || {});
+  projCfg.transitionSetting = {
+    ...projCfg.transitionSetting,
+    enable: true,
+    basicTransition: projectSetting.transitionSetting.basicTransition,
+    openPageLoading: false,
+    openNProgress: false,
+  };
   const darkMode = appStore.getDarkMode;
   const {
     colorWeak,

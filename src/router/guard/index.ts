@@ -7,6 +7,7 @@ import { Modal, notification } from 'ant-design-vue';
 import { warn } from '@/utils/log';
 import { unref } from 'vue';
 import { setRouteChange } from '@/logics/mitt/routeChange';
+import { markPageTransitionStart } from '@/utils/http/axios/pageRequestTracker';
 import { createPermissionGuard } from './permissionGuard';
 import { createStateGuard } from './stateGuard';
 import nProgress from 'nprogress';
@@ -36,6 +37,7 @@ function createPageGuard(router: Router) {
   router.beforeEach(async (to) => {
     // The page has already been loaded, it will be faster to open it again, you don’t need to do loading and other processing
     to.meta.loaded = !!loadedPageMap.get(to.path);
+    markPageTransitionStart();
     // Notify routing changes
     setRouteChange(to);
 

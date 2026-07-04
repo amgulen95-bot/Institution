@@ -20,6 +20,31 @@
   opacity: 0;
 }
 
+/* soft-page */
+.soft-page-leave-active {
+  position: absolute !important;
+  z-index: 2;
+  top: 0;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  transition: opacity 0.16s ease-out;
+}
+
+.soft-page-enter-active {
+  position: relative;
+  z-index: 1;
+  transition: opacity 0.22s ease-out;
+}
+
+.soft-page-enter-from {
+  opacity: 0;
+}
+
+.soft-page-leave-to {
+  opacity: 0;
+}
+
 /* fade-slide */
 .fade-slide-leave-active,
 .fade-slide-enter-active {
