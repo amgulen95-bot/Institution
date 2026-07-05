@@ -209,7 +209,7 @@
     </a-form>
 
 
-    <a-modal v-model:open="templateModal.visible" title="保存为常用方模板" centered width="600px" @ok="saveTemplate" :maskClosable="false" destroyOnClose>
+    <a-modal v-model:open="templateModal.visible" title="保存为常用方模板" centered width="600px" wrapClassName="dashboard-prescription-modal" @ok="saveTemplate" :maskClosable="false" destroyOnClose>
       <section class="padding-lr32">
         <a-form :model="templateModal.form" :labelCol="{ style: 'width: 100px' }" :wrapperCol="{span:16}" :rules="templateModal.rules" ref="templateFormIns">
           <a-form-item label="模板分类" name="CategoryId">
@@ -224,14 +224,14 @@
       </section>
     </a-modal>
 
-    <a-modal v-model:open="prescriptionVisible" centered width="1080px" :maskClosable="false" :destroyOnClose="false" :forceRender="true" :footer="null">
+    <a-modal v-model:open="prescriptionVisible" centered width="1080px" wrapClassName="dashboard-prescription-modal" :maskClosable="false" :destroyOnClose="false" :forceRender="true" :footer="null">
       <div class="prescription-template-modal-body" :class="{ 'is-ready': prescriptionTemplateReady }" style="height: calc(100vh - 200px);">
         <PrescriptionTemplate :isModal="true" @use-template="handleTemplateSelect" @ready="handlePrescriptionTemplateReady"></PrescriptionTemplate>
       </div>
     </a-modal>
 
 
-    <a-modal v-model:open="callTemplateVisible" title="调用模板" centered width="500px" :maskClosable="false" destroyOnClose>
+    <a-modal v-model:open="callTemplateVisible" title="调用模板" centered width="500px" wrapClassName="dashboard-prescription-modal" :maskClosable="false" destroyOnClose>
       <div class="text-center">
         <div class="text-18px text-bold">"{{templateInfo.ProName||templateInfo.Name}}"</div>
         <div class="mt12px">作为汤头添加到当前处方，还是新起一个处方？</div>
@@ -1071,5 +1071,9 @@
 }
 .prescription-template-modal-body.is-ready {
   opacity: 1;
+}
+:global(.dashboard-prescription-modal .ant-modal-content) {
+  border-radius: 28px;
+  overflow: hidden;
 }
 </style>

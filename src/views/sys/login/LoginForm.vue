@@ -82,7 +82,7 @@
   </Form>
 </template>
 <script lang="ts" setup>
-  import { reactive, ref, unref, computed } from 'vue';
+  import { reactive, ref, unref, computed, h } from 'vue';
 
   import { Checkbox, Form, Input, Row, Col, Button, Divider } from 'ant-design-vue';
   import {
@@ -90,6 +90,7 @@
     WechatFilled,
     AlipayCircleFilled,
     GoogleCircleFilled,
+    SafetyCertificateOutlined,
     TwitterCircleFilled,
   } from '@ant-design/icons-vue';
   import LoginFormTitle from './LoginFormTitle.vue';
@@ -143,9 +144,16 @@
       });
       if (userInfo) {
         notification.success({
-          message: t('sys.login.loginSuccessTitle'),
-          description: `${t('sys.login.loginSuccessDesc')}: ${userInfo.AccountName}`,
-          duration: 3,
+          class: 'myy-login-success-notice',
+          icon: h(SafetyCertificateOutlined),
+          message: h('div', { class: 'myy-login-success-notice__title' }, '登录成功'),
+          description: h('div', { class: 'myy-login-success-notice__body' }, [
+            h('span', { class: 'myy-login-success-notice__welcome' }, '欢迎回到蒙医云诊室'),
+            h('span', { class: 'myy-login-success-notice__name' }, userInfo.AccountName),
+            h('i'),
+            h('span', { class: 'myy-login-success-notice__status' }, '系统正在为您进入机构工作台'),
+          ]),
+          duration: 2.6,
         });
       }
     } catch (error) {

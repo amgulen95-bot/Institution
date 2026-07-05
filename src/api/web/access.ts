@@ -19,6 +19,21 @@ export function loginApi(params: {
   );
 }
 
+export function loginBySmsApi(params: {
+  phone: string,
+  code: string
+}, mode: ErrorMessageMode = 'modal') {
+  return defHttp.post(
+    {
+      url: `/Myy/Clinic/${initGid}/Account/LoginByVerifyCode`,
+      params,
+    },
+    {
+      errorMessageMode: mode,
+    },
+  );
+}
+
 /**
  * @description: getUserInfo
  */
@@ -122,4 +137,3 @@ export function saveRole(params, mode: ErrorMessageMode = 'message') {
     }
   );
 }
-

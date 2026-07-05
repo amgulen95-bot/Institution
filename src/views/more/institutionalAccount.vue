@@ -219,11 +219,11 @@
       </section>
     </a-modal>
 
-    <a-modal v-model:open="recordVisible" title="提现记录" centered width="1080px" :footer="null" :maskClosable="false" destroyOnClose>
+    <a-modal v-model:open="recordVisible" title="提现记录" centered width="1480px" :footer="null" :maskClosable="false" wrapClassName="institution-account-list-modal" forceRender>
       <WithdrawalHistory></WithdrawalHistory>
     </a-modal>
 
-    <a-modal v-model:open="logsVisible" title="小云币明细" centered width="1080px" :footer="null" :maskClosable="false" destroyOnClose>
+    <a-modal v-model:open="logsVisible" title="小云币明细" centered width="1120px" :footer="null" :maskClosable="false" wrapClassName="institution-account-list-modal" forceRender>
       <CreditLogs></CreditLogs>
     </a-modal>
   </div>

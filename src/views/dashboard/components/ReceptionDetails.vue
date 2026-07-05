@@ -36,7 +36,7 @@
       </a-descriptions>
     </div>
 
-    <a-card class="mt16px completed-prescription-card">
+    <a-card class="mt16px completed-prescription-card dashboard-card-radius">
       <div class="flex justify-between align-center flex-wrap">
         <div class="text-18px text-bold">
           <img class="w28px h28px" src="../../../assets/images/yaofang.png" alt="">
@@ -175,6 +175,11 @@
 
 </script>
 <style lang="less" scoped>
+.dashboard-card-radius {
+  overflow: hidden;
+  border-radius: 12px;
+}
+
 .completed-prescription-card {
   :deep(.ant-select) {
     pointer-events: none;

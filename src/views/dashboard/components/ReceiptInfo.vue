@@ -257,7 +257,7 @@
 </script>
 <style lang="less" scoped>
 :global(.receipt-info-modal .ant-modal-content) {
-  border-radius: 12px;
+  border-radius: 28px;
   overflow: hidden;
   box-shadow: 0 14px 36px rgb(32 56 85 / 14%);
 }
@@ -271,7 +271,10 @@
 }
 
 :global(.receipt-info-modal .ant-modal-footer .ant-btn),
-:global(.receipt-info-modal .ant-btn),
+:global(.receipt-info-modal .ant-btn) {
+  border-radius: 8px;
+}
+
 :global(.receipt-info-modal .ant-input),
 :global(.receipt-info-modal .ant-select-selector),
 :global(.receipt-info-modal .ant-cascader-picker) {

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-modal v-model:open="payModal.visible" :title="payInfo.PayType==1?'授信扣除':'收款'" centered width="700px" @ok="confirm" :maskClosable="false" destroyOnClose>
+    <a-modal v-model:open="payModal.visible" :title="payInfo.PayType==1?'授信扣除':'收款'" centered width="700px" :wrapClassName="wrapClassName" @ok="confirm" :maskClosable="false" destroyOnClose>
       <section class="padding-lr32">
         <div class="text-center text-16px pt12px">{{payInfo.PayType==1?'请确认授信金额':'请使用扫码枪，扫描患者付款码'}}</div>
         <div class="color-[#F74344] text-bold text-center text-32px mb24px">
@@ -37,6 +37,7 @@
     }},
     visible: { type: Boolean, default: false },
     isPrintReceipt: { type: Boolean, default: false },
+    wrapClassName: { type: String, default: '' },
   });
   const emit = defineEmits(['update:visible', 'confirm'])
   const code=ref('')
@@ -63,4 +64,8 @@
   }
 </script>
 <style lang="less" scoped>
+:global(.dashboard-confirm-payment-modal .ant-modal-content) {
+  border-radius: 28px;
+  overflow: hidden;
+}
 </style>

@@ -1,7 +1,7 @@
 <template>
   <div class="p-4 home" v-loading="loading">
     <div class="flex justify-between" style="height: calc(100vh - 192px);">
-      <a-card class="h-100% overflow-hidden w-380px">
+      <a-card class="dashboard-card-radius h-100% overflow-hidden w-380px">
         <div class="text-18px text-bold">今日接诊</div>
         <div class="flex align-center mt16px mb12px">
           <a-input-search v-model:value="todayVisit.searchParams.keyword" placeholder="搜索患者姓名、手机号" @search="handleTabChange" />
@@ -16,7 +16,7 @@
           <a-tab-pane :key="2" tab="已完成"></a-tab-pane>
         </a-tabs>
         <div ref="todayVisitListRef" class="overflow-y-scroll scrollbar-none today-visit-content-panel" :class="{ 'today-visit-content-switching': todayVisitSwitching }" style="height: calc(100% - 142px);">
-          <div class="p16px border border-color-[#F3F4F7] border-rd-8px flex mb12px pointer" :class="visitInfo.index==index?'activeTag':''" v-for="(item,index) in todayVisit.list" @click="seleceVisit(item,index)" :key="index">
+          <div class="today-visit-item p16px border border-color-[#F3F4F7] border-rd-8px flex mb12px pointer" :class="visitInfo.index==index?'activeTag':''" v-for="(item,index) in todayVisit.list" @click="seleceVisit(item,index)" :key="index">
             <img class="w52px h52px border-rd-50%" :src="getImageUrl(`userAvatar${(index % 7) + 1}.png`)" alt="">
             <div class="flex-sub ml12px">
               <div class="flex justify-between align-center">
@@ -47,7 +47,7 @@
         </div>
       </a-card>
       <div class="min-w600px flex-sub ml16px h-100% overflow-y-scroll pb12px scrollbar-none receptionPanel today-visit-content-panel" :class="{ 'today-visit-content-switching': todayVisitSwitching || todayVisitDetailSwitching }">
-        <template v-if="visitInfo.detail.Visit?.VisitStatus!=2">
+        <template v-if="isEditableVisit">
           <div class="flex justify-between align-center flex-wrap">
             <div class="flex justify-between align-center flex-wrap">
               <a-space class="patient-info-card pt2px pb2px pl16px pr16px bg-[#fff] border-rd-8px mb8px" :size="24">
@@ -79,7 +79,7 @@
                   </template>
                   <div class="flex align-center patient-phone-field">
                     <img class="w20px h20px" src="../../assets/images/phone.png" alt="">
-                    <a-input class="w100px patient-phone-input" size="small" v-model:value="patientModal.form.Phone" :bordered="false" :disabled="Boolean(patientModal.form.Id)" placeholder="手机号码" :maxlength="11" @change="handlePhoneInputChange" @blur="validatePatientPhone" />
+                    <a-input class="w100px patient-phone-input" size="small" v-model:value="patientModal.form.Phone" :bordered="false" :disabled="Boolean(patientModal.form.Id)" placeholder="手机号码" :maxlength="11" @change="handlePhoneInputChange" @blur="validatePatientPhone({ defer: true })" />
                   </div>
                 </a-popover>
                 <span class="patient-clear-slot">
@@ -117,7 +117,7 @@
           <div class="bg-[#fff] border-rd-12px border border-color-[#e8cf9e] overflow-hidden">
             <Medical v-model:visit-form="visitForm" ref="medicalRef"></Medical>
           </div>
-          <a-card class="mt16px">
+          <a-card class="dashboard-card-radius mt16px">
             <Prescription v-model:prescription-list="prescriptionList" ref="prescriptionRef" @add="handleCalculateFee" @doseChange="handleCalculateFee"></Prescription>
           </a-card>
           <!-- <a-card class="mt16px">
@@ -205,7 +205,7 @@
         <ReceptionDetails :data="visitInfo.detail" v-else></ReceptionDetails>
       </div>
       <div class="w-380px ml16px h-100% overflow-y-scroll scrollbar-none today-visit-content-panel" :class="{ 'today-visit-content-switching': todayVisitSwitching || todayVisitDetailSwitching }">
-        <a-card class="otherCard" title="就诊历史" style="height: calc(50% - 12px);">
+        <a-card class="dashboard-card-radius otherCard" title="就诊历史" style="height: calc(50% - 12px);">
           <template #extra v-if="historyList.length">
             <div class="color-[#A5A8B4] pointer" @click="medicalModalVisible=true">
               <span>更多</span>
@@ -240,7 +240,7 @@
             <a-empty  />
           </div>
         </a-card>
-        <a-card title="处方记录" class="mt16px otherCard" style="height: calc(50% - 12px);">
+        <a-card title="处方记录" class="dashboard-card-radius mt16px otherCard" style="height: calc(50% - 12px);">
           <template #extra>
             <div class="color-[#A5A8B4] pointer" @click="seeRootExtraction">
               <span>更多</span>
@@ -276,7 +276,7 @@
         </a-card>
       </div>
     </div>
-    <a-card class="mt16px" v-if="visitInfo.detail.Visit?.VisitStatus!=2">
+    <a-card class="mt16px" v-if="isEditableVisit">
       <div class="flex justify-between align-center">
         <a-space>
           <a-button class="dashboard-system-radius-btn" type="primary" ghost @click="seeFeeDetail">费用明细</a-button>
@@ -314,20 +314,21 @@
     <OrderPayCountdownModal
       v-model:visible="orderPayCountdown.visible"
       :order-code="orderPayCountdown.orderCode"
+      :seconds="orderPayCountdown.seconds"
       @confirm="goChargePayment"
       @cancel="cancelChargePaymentCountdown"
     ></OrderPayCountdownModal>
 
-    <ConfirmPayment v-model:visible="payModal.visible" :payInfo="payModal.info" @confirm="confirmPay"></ConfirmPayment>
+    <ConfirmPayment v-model:visible="payModal.visible" :payInfo="payModal.info" wrap-class-name="dashboard-confirm-payment-modal" @confirm="confirmPay"></ConfirmPayment>
 
     <template v-if="patientModal.form.Id">
-      <MedicalDetail v-model:visible="medicalModalVisible" :patientId="patientModal.form.Id" :type="1"></MedicalDetail>
+      <MedicalDetail v-model:visible="medicalModalVisible" :patientId="patientModal.form.Id" :type="1" wrap-class-name="dashboard-medical-detail-modal"></MedicalDetail>
     </template>
     
   </div>
 </template>
 <script lang="ts" setup>
-  import { onActivated,onBeforeUnmount,onMounted,ref,createVNode,nextTick} from 'vue';
+  import { computed,onActivated,onBeforeUnmount,onMounted,ref,createVNode,nextTick} from 'vue';
   import { useMessage } from '/@/hooks/web/useMessage';
   import { Modal } from 'ant-design-vue';
   import { useUserStore } from '@/store/modules/user';
@@ -349,6 +350,7 @@
   import Medical from './components/Medical.vue';
   import ReceptionDetails from './components/ReceptionDetails.vue';
   import MedicalDetail from '/@/components/MedicalDetail.vue';
+  import { getCloudPharmacyQuickPayConfig } from '/@/utils/quickPayConfig';
 
   const { createMessage} = useMessage()
   const userStore = useUserStore();
@@ -390,6 +392,7 @@
     orderCode:'',
     visitId:'',
     patientId:'',
+    seconds:8,
   })
   const feeModal=ref({
     visible:false,
@@ -416,6 +419,13 @@
     Id:'',
     index:0,
     detail:{},
+  })
+  const isEditableVisit = computed(() => {
+    if(!visitInfo.value.Id){
+      return true
+    }
+    const status = visitInfo.value.detail?.Visit?.VisitStatus
+    return status !== undefined && status !== null && status != 2
   })
   const prescriptionForm={
     Name:'',
@@ -488,6 +498,12 @@
     await waitFrame()
     await waitFrame()
   }
+  const waitTodayVisitSwitchHidden = async () => {
+    await nextTick()
+    await waitFrame()
+    await waitFrame()
+    await waitMs(190)
+  }
   onMounted(()=>{
     getBasicEnum()
     resetTodayVisitToAllFirst()
@@ -518,7 +534,11 @@
     })
   }
 
-  const resetTodayVisitToAllFirst=()=>{
+  const resetTodayVisitToAllFirst=async ()=>{
+    const switchKey = ++todayVisitSwitchKey
+    todayVisitSwitching.value = true
+    await waitTodayVisitSwitchHidden()
+    if (switchKey !== todayVisitSwitchKey) return
     saveCurrentDraft()
     todayVisit.value.searchParams.status=null
     todayVisit.value.searchParams.page=1
@@ -530,23 +550,35 @@
         todayVisitListRef.value.scrollTop = 0
       }
     })
-    return getTodayVisitList(false)
+    await getTodayVisitList(false, { autoSelect: true, showLoading: false })
+    if (switchKey !== todayVisitSwitchKey) return
+    await waitTodayVisitStableFrame()
+    if (switchKey === todayVisitSwitchKey) {
+      todayVisitSwitching.value = false
+    }
   }
 
   // 快速接诊
-  const handleQuick=()=>{
+  const handleQuick=async ()=>{
     saveCurrentDraft()
     todayVisit.value.searchParams.status=null
     todayVisit.value.searchParams.page=1
-    todayVisit.value.list=[]
     todayVisit.value.hasNextPage=false
     InitializeAll()
     const draftInfo = {
       ...cloneDeep(anonymousInfo),
       DraftId: Date.now(),
     }
-    todayVisit.value.list.unshift(draftInfo)
     addDraftPatient(cloneDeep(draftInfo))
+    await getTodayVisitList(false, { autoSelect: false, showLoading: false })
+    const draftIndex = todayVisit.value.list.findIndex((item) => item.DraftId === draftInfo.DraftId)
+    if(draftIndex !== -1){
+      visitInfo.value={
+        Id:'',
+        index:draftIndex,
+        detail:{},
+      }
+    }
     nextTick(() => {
       if(todayVisitListRef.value){
         todayVisitListRef.value.scrollTop = 0
@@ -632,7 +664,7 @@
   }
   
   // 获取今日接诊列表
-  const getTodayVisitList=(isLoadMore = false, options: { autoSelect?: boolean; showLoading?: boolean } = {})=>{
+  const getTodayVisitList=(isLoadMore = false, options: { autoSelect?: boolean; showLoading?: boolean; preserveCompletedDetail?: boolean } = {})=>{
     const requestOptions = { autoSelect: true, showLoading: true, ...options }
     if(requestOptions.showLoading){
       loading.value=true
@@ -654,6 +686,20 @@
       }
 
       if(todayVisit.value.list.length && requestOptions.autoSelect){
+        const firstVisit = todayVisit.value.list[0]
+        const shouldPreserveCompletedDetail =
+          requestOptions.preserveCompletedDetail &&
+          firstVisit?.Id &&
+          firstVisit.Id === visitInfo.value.Id &&
+          visitInfo.value.detail?.Visit?.VisitStatus === 2
+        if(shouldPreserveCompletedDetail){
+          visitInfo.value.index=0
+          visitInfo.value.Id=firstVisit.Id
+          return data
+        }
+        if(requestOptions.preserveCompletedDetail){
+          return data
+        }
         visitInfo.value.index=0
         visitInfo.value.Id=todayVisit.value.list[visitInfo.value.index].Id
         if(visitInfo.value.Id){
@@ -870,7 +916,13 @@
     return phone
   }
 
-  const validatePatientPhone=()=>{
+  const validatePatientPhone=(options: { defer?: boolean } = {})=>{
+    if (options.defer) {
+      window.setTimeout(() => {
+        validatePatientPhone()
+      }, 120)
+      return true
+    }
     const phone = normalizePatientPhone()
     if (phone && !/^\d{11}$/.test(phone)) {
       createMessage.warning('请输入11位数字手机号')
@@ -881,8 +933,37 @@
 
   const handleTabChange = async () => {
     const switchKey = ++todayVisitSwitchKey
+    const shouldTryPreserveCompletedDetail =
+      todayVisit.value.searchParams.status !== 1 &&
+      Boolean(visitInfo.value.Id) &&
+      visitInfo.value.detail?.Visit?.VisitStatus === 2
+    if(shouldTryPreserveCompletedDetail){
+      todayVisit.value.searchParams.page = 1
+      await getTodayVisitList(false, { autoSelect: true, showLoading: false, preserveCompletedDetail: true })
+      if (switchKey !== todayVisitSwitchKey) return
+      const firstVisit = todayVisit.value.list[0]
+      if(firstVisit?.Id && firstVisit.Id === visitInfo.value.Id){
+        visitInfo.value.index = 0
+        return
+      }
+      todayVisitSwitching.value = true
+      await waitTodayVisitSwitchHidden()
+      if (switchKey !== todayVisitSwitchKey) return
+      InitializeAll()
+      visitInfo.value.index = 0
+      visitInfo.value.Id = firstVisit?.Id || ''
+      if(visitInfo.value.Id){
+        await visitDetail(false)
+      }
+      if (switchKey !== todayVisitSwitchKey) return
+      await waitTodayVisitStableFrame()
+      if (switchKey === todayVisitSwitchKey) {
+        todayVisitSwitching.value = false
+      }
+      return
+    }
     todayVisitSwitching.value = true
-    await waitMs(120)
+    await waitTodayVisitSwitchHidden()
     if (switchKey !== todayVisitSwitchKey) return
 
     todayVisit.value.searchParams.page = 1
@@ -976,11 +1057,15 @@
   })
 
   const handleSelectPatient = (record: any) => {
+    clearTimeout(timer)
+    clearTimeout(patientPopoverTimer)
+    patientSearchRequestKey++
     patientModal.value.form=cloneDeep(record)
+    patientModal.value.form.Phone = String(patientModal.value.form.Phone || '').replace(/\D/g, '').slice(0, 11)
     syncCurrentVisitListItem({
       PatientGender: record.Gender,
       PatientAge: record.Age,
-      PatientPhone: record.Phone,
+      PatientPhone: patientModal.value.form.Phone,
     })
     patientModal.value.form.Id=record.PatientId
     patientModal.value.visible = false
@@ -1270,11 +1355,15 @@
       changeFinishVisit(false, finishedVisitId)  //完成接诊
 
       if(saveType.value==3){
-        orderPayCountdown.value={
-          visible:true,
-          orderCode:data.OrderCode,
-          visitId:finishedVisitId,
-          patientId:finishedPatientId,
+        const quickPayConfig = getCloudPharmacyQuickPayConfig()
+        if(quickPayConfig.enabled){
+          orderPayCountdown.value={
+            visible:true,
+            orderCode:data.OrderCode,
+            visitId:finishedVisitId,
+            patientId:finishedPatientId,
+            seconds:quickPayConfig.seconds,
+          }
         }
       }else if(saveType.value==1){
         Modal.confirm({
@@ -1347,6 +1436,11 @@
   }
 </script>
 <style lang="less" scoped>
+.dashboard-card-radius {
+  overflow: hidden;
+  border-radius: 12px;
+}
+
 .home ::v-deep(.ant-card-body){
   height: 100% !important;
 }
@@ -1435,6 +1529,15 @@
 .activeTag{
   background: #F9FBFD;
   box-shadow: 4px 0 0 0 #0A5AFF inset;
+}
+.today-visit-item {
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    border-color: #D7E4F8;
+    background: #F9FBFD;
+    box-shadow: 0 0 0 2px fade(@primary-color, 8%), 0 4px 10px rgba(32, 48, 75, 0.05);
+  }
 }
 .today-visit-tabs {
   :deep(.ant-tabs-nav-list) {

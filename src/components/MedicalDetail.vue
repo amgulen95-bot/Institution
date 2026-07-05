@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-modal v-model:open="medicalModal.visible" title="病历详情" centered width="1000px" :footer="null" :maskClosable="false" destroyOnClose>
+    <a-modal v-model:open="medicalModal.visible" title="病历详情" centered width="1000px" :wrapClassName="wrapClassName" :footer="null" :maskClosable="false" destroyOnClose>
       <section class="padding-lr24 pb24px">
         <div class="flex">
           <div class="bg-[#f5f7fa] border-rd-8px p-12px overflow-y-scroll scrollbar-none" style="height: calc(100vh - 380px);" v-if="visitInfo.list.length">
@@ -113,6 +113,7 @@
   const props = defineProps({
     patientId: { type: String, default:'' },
     visible: { type: Boolean, default: false },
+    wrapClassName: { type: String, default: '' },
   });
   const { createMessage} = useMessage()
   const emit = defineEmits(['update:visible'])
@@ -195,4 +196,8 @@
 
 </script>
 <style lang="less" scoped>
+:global(.dashboard-medical-detail-modal .ant-modal-content) {
+  border-radius: 28px;
+  overflow: hidden;
+}
 </style>

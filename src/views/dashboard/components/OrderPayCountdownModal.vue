@@ -98,18 +98,17 @@
 
 <style lang="less" scoped>
 :global(.order-pay-countdown-modal .ant-modal-content) {
-  border-radius: 14px;
+  border-radius: 28px;
   overflow: hidden;
   box-shadow: 0 18px 42px rgb(32 56 85 / 16%);
 }
 
 :global(.order-pay-countdown-modal .ant-modal-body) {
-  padding: 34px 42px 36px;
+  padding: 0;
 }
 
 .order-pay-countdown {
   display: flex;
-  min-height: 480px;
   flex-direction: column;
   text-align: center;
 }
@@ -118,6 +117,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: 0 42px 27px;
 }
 
 .order-pay-countdown__status {
@@ -148,10 +148,9 @@
 }
 
 .order-pay-countdown__panel {
-  margin-top: 26px;
-  padding: 26px 32px 24px;
+  padding: 36px 32px 24px;
   border: 1px solid #e1ebff;
-  border-radius: 12px;
+  border-radius: 8px;
   background: #f9fbfd;
 }
 
@@ -202,8 +201,7 @@
   justify-content: center;
   align-items: center;
   gap: 16px;
-  margin-top: 22px;
-  padding-bottom: 22px;
+  padding-top: 24px;
 }
 
 .order-pay-countdown__btn {
@@ -214,8 +212,23 @@
 }
 
 .order-pay-countdown__btn--cancel {
+  display: flex;
+  width: 100%;
+  height: 95px;
+  align-items: center;
+  justify-content: center;
   color: #5f6a7a;
   border-color: #d8e4f7;
-  background: #fff;
+  border-radius: 8px 8px 0 0;
+  background: #fffdec;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover,
+  &:focus {
+    color: #0a5aff;
+    border-color: #bcd2ff;
+    background: #eef5ff;
+    box-shadow: 0 0 0 2px rgba(10, 90, 255, 0.08);
+  }
 }
 </style>

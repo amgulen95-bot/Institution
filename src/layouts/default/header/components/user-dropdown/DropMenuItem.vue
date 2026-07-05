@@ -1,24 +1,32 @@
 <template>
-  <Menu.Item :key="itemKey">
-    <span class="flex items-center justify-between">
-      <div class="flex items-center">
-        <Icon :icon="icon" class="mr-1" />
-        <span class="whitespace-nowrap">{{ text }}</span>
-      </div>
-      <div class="flex items-center" v-if="subText">
-        <span class="ml8px" >{{ subText }}</span>
-        <Icon class="ml4px" style="font-size: 10px;" icon="ant-design:right-outlined"  />
-      </div>
+  <button type="button" :class="menuItemClass" @click="$emit('select', itemKey)">
+    <span class="vben-header-user-dropdown__item flex items-center justify-between">
+      <span class="vben-header-user-dropdown__item-left flex items-center">
+        <span class="vben-header-user-dropdown__item-icon">
+          <component :is="iconComponent" />
+        </span>
+        <span class="vben-header-user-dropdown__item-text whitespace-nowrap">{{ text }}</span>
+      </span>
+      <span class="vben-header-user-dropdown__item-right flex items-center" v-if="subText">
+        <span class="vben-header-user-dropdown__item-sub">{{ subText }}</span>
+        <RightOutlined class="vben-header-user-dropdown__item-arrow" />
+      </span>
     </span>
-  </Menu.Item>
+  </button>
 </template>
 <script lang="ts" setup>
-  import { Menu } from 'ant-design-vue';
   import { computed, getCurrentInstance } from 'vue';
-  import Icon from '@/components/Icon/Icon.vue';
   import { propTypes } from '@/utils/propTypes';
+  import {
+    LockOutlined,
+    MobileOutlined,
+    PoweroffOutlined,
+    RightOutlined,
+    SwapOutlined,
+  } from '@ant-design/icons-vue';
 
   defineOptions({ name: 'DropdownMenuItem' });
+  defineEmits(['select']);
 
   const props = defineProps({
     // eslint-disable-next-line
@@ -31,4 +39,18 @@
 
   const instance = getCurrentInstance();
   const itemKey = computed(() => props.itemKey || instance?.vnode?.props?.key);
+  const menuItemClass = computed(() => [
+    'vben-header-user-dropdown__menu-item',
+    itemKey.value ? `vben-header-user-dropdown__menu-item--${itemKey.value}` : '',
+  ]);
+  const iconComponent = computed(() => {
+    const iconMap: Record<string, typeof LockOutlined> = {
+      'ant-design:mobile-outlined': MobileOutlined,
+      'ant-design:lock-outlined': LockOutlined,
+      'ant-design:swap-outlined': SwapOutlined,
+      'ion:lock-closed-outline': LockOutlined,
+      'ion:power-outline': PoweroffOutlined,
+    };
+    return iconMap[props.icon || ''] || LockOutlined;
+  });
 </script>

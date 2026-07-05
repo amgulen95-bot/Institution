@@ -307,7 +307,7 @@
 </script>
 <style lang="less" scoped>
 :global(.patient-archive-modal .ant-modal-content) {
-  border-radius: 12px;
+  border-radius: 28px;
   overflow: hidden;
   box-shadow: 0 14px 36px rgb(32 56 85 / 14%);
 }

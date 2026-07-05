@@ -49,6 +49,99 @@
   color: @primary-color !important;
 }
 
+.myy-login-success-notice {
+  width: 390px;
+  padding: 18px 20px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 236, 0.96) 0%, rgba(255, 255, 255, 0.98) 48%, rgba(249, 251, 253, 0.98) 100%),
+    #fff;
+  border: 1px solid rgba(216, 226, 240, 0.9);
+  border-radius: 28px;
+  box-shadow: 0 24px 60px rgba(38, 52, 78, 0.16);
+
+  &::after {
+    position: absolute;
+    right: 18px;
+    bottom: 14px;
+    width: 82px;
+    height: 82px;
+    background: linear-gradient(135deg, rgba(47, 111, 237, 0.12), rgba(255, 255, 255, 0));
+    border-radius: 50%;
+    content: '';
+    pointer-events: none;
+  }
+
+  .ant-notification-notice-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    color: #2f6fed;
+    font-size: 21px;
+    background: #eef5ff;
+    border: 1px solid #d7e4ff;
+    border-radius: 14px;
+  }
+
+  .ant-notification-notice-message {
+    margin-bottom: 8px;
+    color: #1f2937;
+  }
+
+  .ant-notification-notice-description {
+    color: #5f6a7a;
+  }
+
+  .ant-notification-notice-close {
+    top: 18px;
+    right: 18px;
+    color: #8a95a6;
+  }
+
+  &__title {
+    color: #1f2937;
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 24px;
+  }
+
+  &__body {
+    display: grid;
+    gap: 6px;
+    padding-top: 2px;
+  }
+
+  &__welcome {
+    color: #5f6a7a;
+    font-size: 13px;
+    line-height: 20px;
+  }
+
+  &__name {
+    color: #000;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 22px;
+  }
+
+  &__body i {
+    display: block;
+    height: 1px;
+    margin: 3px 0;
+    background-image: linear-gradient(to right, #d8e2f0 50%, transparent 50%);
+    background-repeat: repeat-x;
+    background-size: 8px 1px;
+  }
+
+  &__status {
+    color: #2f6fed;
+    font-size: 13px;
+    line-height: 20px;
+  }
+}
+
 .ant-checkbox-checked .ant-checkbox-inner::after,
 .ant-tree-checkbox-checked .ant-tree-checkbox-inner::after {
   border-top: 0 !important;

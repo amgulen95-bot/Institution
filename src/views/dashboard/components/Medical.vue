@@ -277,7 +277,7 @@
     </a-form>
     
 
-    <a-modal v-model:open="templateModal.visible" title="保存为病历模板" centered width="600px" @ok="saveTemplate" :maskClosable="false" destroyOnClose>
+    <a-modal v-model:open="templateModal.visible" title="保存为病历模板" centered width="600px" wrapClassName="dashboard-medical-modal" @ok="saveTemplate" :maskClosable="false" destroyOnClose>
       <section class="padding-lr32">
         <a-form :model="templateModal.form" :labelCol="{ style: 'width: 100px' }" :wrapperCol="{span:16}" :rules="templateModal.rules" ref="templateFormIns">
           <a-form-item label="模板分类" name="CategoryId">
@@ -295,7 +295,7 @@
       </section>
     </a-modal>
 
-    <a-modal v-model:open="callTemplateVisible" title="调用模板" centered width="500px" :maskClosable="false" destroyOnClose>
+    <a-modal v-model:open="callTemplateVisible" title="调用模板" centered width="500px" wrapClassName="dashboard-medical-modal" :maskClosable="false" destroyOnClose>
       <div class="text-center">
         <div class="text-18px text-bold">已填写“主诉”“现病史”</div>
         <div class="mt12px">插入到已填写内容中，还是覆盖已填写内容？</div>
@@ -309,7 +309,7 @@
 			</template>
     </a-modal>
 
-    <a-modal v-model:open="medicalVisible" centered width="1080px" :maskClosable="false" :destroyOnClose="false" :forceRender="true" :footer="null">
+    <a-modal v-model:open="medicalVisible" centered width="1080px" wrapClassName="dashboard-medical-modal" :maskClosable="false" :destroyOnClose="false" :forceRender="true" :footer="null">
       <div class="medical-template-modal-body" :class="{ 'is-ready': medicalTemplateReady }" style="height: calc(100vh - 200px);">
         <MedicalTemplate :isModal="true" @use-template="handleTemplateSelect" @ready="handleMedicalTemplateReady"></MedicalTemplate>
       </div>
@@ -855,5 +855,9 @@
 }
 .medical-template-modal-body.is-ready {
   opacity: 1;
+}
+:global(.dashboard-medical-modal .ant-modal-content) {
+  border-radius: 28px;
+  overflow: hidden;
 }
 </style>

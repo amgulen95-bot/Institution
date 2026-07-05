@@ -413,6 +413,22 @@ const MyRoutes = [{
             "currentActiveMenu": ""
         },
         "children": []
+    },{
+        "syetmType": 0,
+        "type": 1,
+        "name": "/more/systemConfig",
+        "path": "/more/systemConfig",
+        "redirect": "",
+        "component": "/more/systemConfig",
+        "meta": {
+            "orderNo": 9,
+            "icon": "",
+            "title": "系统配置",
+            "hideMenu": false,
+            "hideTab": false,
+            "currentActiveMenu": ""
+        },
+        "children": []
     }]
 }]
 

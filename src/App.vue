@@ -31,7 +31,7 @@
           colorWarning: '#EFBD47',
           colorError: '#E02424',
           colorInfo: '#0A5AFF',
-          borderRadius:4,  //按钮圆角
+          borderRadius:8,  //按钮圆角
           colorBgLayout:'#EEF3FB',  //页面主背景
           borderRadiusLG:8,  //card圆角
           paddingLG:16,  //card基础padding
