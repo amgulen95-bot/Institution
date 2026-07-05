@@ -1,7 +1,7 @@
 <template>
-  <div>
-    <div class="flex border-rd-8px overflow-hidden" v-loading="loading">
-      <div class="w350px bg-[#F5F7FA]">
+  <div class="prescription-template-root">
+    <div class="prescription-template-panel flex border-rd-8px overflow-hidden" v-loading="loading">
+      <div class="prescription-template-sidebar w350px bg-[#F5F7FA]">
         <div class="pt24px pl16px pr16px">
           <a-input-search v-model:value="keyword" placeholder="搜索中药处方模板" @search="getPrescriptList" />
         </div>
@@ -16,110 +16,117 @@
         <div class="flex overflow-hidden classifyList" style="height: calc(100vh - 380px);">
           <a-empty class="flex-sub mt48px" v-if="!categoryInfo.list.length" />
           <template v-else>
-            <div class="overflow-y-scroll pl16px pt16px  border-r border-color-[#e0e0e0] scrollbar-none">
-              <div class="mb20px pt12px pb12px pl12px pr12px max-w-116px flex align-center pointer" :class="categoryInfo.id==item.Id?'text-theme text-bold activeClassify':''" v-for="(item,index) in categoryInfo.list" :key="index" @click="changeClassify(item)">
+            <div class="prescription-template-category-list overflow-y-scroll pl16px pt16px border-r border-color-[#e0e0e0] scrollbar-none">
+              <div class="prescription-template-category-item mb20px pt12px pb12px pl12px pr12px max-w-116px flex align-center pointer" :class="categoryInfo.id==item.Id?'text-theme text-bold activeClassify':''" v-for="(item,index) in categoryInfo.list" :key="index" @click="changeClassify(item)">
                 <img v-if="categoryInfo.id!=item.Id" class="w16px h16px" src="../assets/images/prescriptionIcon.png" alt="">
                 <img v-else class="w16px h16px" src="../assets/images/prescriptionActiveIcon.png" alt="">
                 <span class="ml4px ellipsis1">{{item.Name}}</span>
               </div>
             </div>
-            <div class="overflow-y-scroll p16px scrollbar-none flex-sub">
-              <div class="p12px border-rd-8px pointer" :class="templateInfo.id==item.Id?'text-theme text-bold bg-[#e1ebff]':''" v-for="(item,index) in templateInfo.list" :key="index" @click="changeTemplate(item)">{{item.Name}}</div>
+            <div class="prescription-template-list overflow-y-scroll p16px scrollbar-none flex-sub">
+              <div class="prescription-template-list-item p12px border-rd-8px pointer" :class="templateInfo.id==item.Id?'text-theme text-bold bg-[#e1ebff]':''" v-for="(item,index) in templateInfo.list" :key="index" @click="changeTemplate(item)">{{item.Name}}</div>
             </div>
           </template>
         </div>
 
-        <div class="flex align-center justify-center pt16px pb24px border-t border-color-[#e0e0e0]" v-if="activeKey==3">
-          <a-button type="primary" ghost :icon="h(PlusOutlined)" @click="addCategory">创建分类</a-button>
-          <a-button type="primary" :icon="h(PlusOutlined)" class="ml12px" @click="editTemplate('add')">新建模板</a-button>
+        <div class="prescription-template-sidebar-actions flex align-center justify-center pt16px pb24px border-t border-color-[#e0e0e0]" v-if="activeKey==3">
+          <a-button class="prescription-template-action-btn" type="primary" ghost :icon="h(PlusOutlined)" @click="addCategory">创建分类</a-button>
+          <a-button class="prescription-template-action-btn ml12px" type="primary" :icon="h(PlusOutlined)" @click="editTemplate('add')">新建模板</a-button>
         </div>
       </div>
-      <div class="flex-sub p24px pt36px" v-if="activeKey==1||activeKey==2">
-        <div class="text-18px text-bold">{{templateInfo.detail.ProName}}</div>
-        <div class="overflow-y-scroll scrollbar-none mt16px" style="height: calc(100vh - 350px);">
-          <a-descriptions bordered :column="1" :labelStyle="{ width: '140px' }">
-            <a-descriptions-item label="分类">{{templateInfo.detail.RecipelName}}</a-descriptions-item>
-            <a-descriptions-item :label="item.Name" v-for="(item,index) in templateInfo.detail.Attrs">{{item.Value}}</a-descriptions-item>
-          </a-descriptions>
-          <div class="border mt16px border-rd-8px overflow-hidden border-color-[#f0f0f0]">
-            <div class="pt8px pb8px pl16px pr16px w100% bg-[#fafbfc]">
-              <div class="flex justify-between align-center">
-                <div class="text-bold">{{templateInfo.detail.RecipelName}}-{{ templateInfo.detail.MedicineTypeName }}</div>
-                <div class="color-[#4E5766]">共{{templateInfo.materialsList.length}}味药</div>
+      <div class="prescription-template-detail flex-sub" v-if="activeKey==1||activeKey==2">
+        <div class="prescription-template-detail-scroll overflow-y-scroll scrollbar-none">
+          <section class="prescription-template-hero">
+            <div class="prescription-template-hero-main">
+              <div class="prescription-template-kicker">{{activeKey==1?'经典验方':'协定方'}}</div>
+              <div class="prescription-template-title">{{templateInfo.detail.ProName || '--'}}</div>
+            </div>
+          </section>
+
+          <section class="prescription-template-section">
+            <div class="prescription-template-section-title">模板信息</div>
+            <a-descriptions class="prescription-template-descriptions" bordered :column="1" :labelStyle="{ width: '140px' }">
+              <a-descriptions-item label="分类">{{templateInfo.detail.RecipelName || '--'}}</a-descriptions-item>
+              <a-descriptions-item :label="item.Name" v-for="(item,index) in templateInfo.detail.Attrs" :key="index">{{item.Value || '--'}}</a-descriptions-item>
+            </a-descriptions>
+          </section>
+
+          <section class="prescription-template-section">
+            <div class="prescription-template-section-title">
+              <span>{{templateInfo.detail.RecipelName || '处方'}}-{{ templateInfo.detail.MedicineTypeName || '饮片' }}</span>
+              <span>共{{templateInfo.materialsList.length}}味药</span>
+            </div>
+            <div class="prescription-template-material-grid">
+              <div class="prescription-template-material-card" v-for="(item,index) in templateInfo.materialsList" :key="index">
+                <span>{{item.MaterialName || '--'}}</span>
+                <strong>{{item.Weight || '--'}}g</strong>
               </div>
             </div>
-            <a-descriptions bordered :column="3">
-              <a-descriptions-item :label="item.MaterialName" v-for="(item,index) in templateInfo.materialsList" :key="index">{{item.Weight}}g</a-descriptions-item>
-            </a-descriptions>
-            <a-space class="pt8px pb8px pl16px pr16px w100% bg-[#fafbfc]">
-              <div>{{templateInfo.detail.MedicineTypeName}}</div>
-              <a-divider type="vertical" />
-              <div>{{templateInfo.detail.UseMethodName}}</div>
-              <a-divider type="vertical" />
-              <div>{{templateInfo.detail.DailyFrequencyName}}</div>
-              <a-divider type="vertical" />
-              <div>单次剂量：{{templateInfo.detail.PerDoseAmount}}{{templateInfo.detail.DoseUnitName}}</div>
-              <a-divider type="vertical" />
-              <div>{{templateInfo.detail.TakeTimeName}}</div>
-              <a-divider type="vertical" />
-              <div>疗程：{{templateInfo.detail.CertNumber}}</div>
-            </a-space>
-          </div>
+            <div class="prescription-template-usage">
+              <span>{{templateInfo.detail.MedicineTypeName || '--'}}</span>
+              <span>{{templateInfo.detail.UseMethodName || '--'}}</span>
+              <span>{{templateInfo.detail.DailyFrequencyName || '--'}}</span>
+              <span>单次剂量：{{templateInfo.detail.PerDoseAmount || '--'}}{{templateInfo.detail.DoseUnitName || ''}}</span>
+              <span>{{templateInfo.detail.TakeTimeName || '--'}}</span>
+              <span>疗程：{{templateInfo.detail.CertNumber || '--'}}</span>
+            </div>
+          </section>
         </div>
         
-        <div class="flex align-center mt16px justify-center">
-          <a-button type="primary" v-if="isModal" @click="handleUseTemplate">使用此模板</a-button>
+        <div class="prescription-template-footer justify-end">
+          <a-button class="prescription-template-primary-btn" type="primary" v-if="isModal" @click="handleUseTemplate">使用此模板</a-button>
         </div>
       </div>
 
-      <div class="flex-sub p24px pt36px" v-else>
-        <div class="text-18px text-bold">{{templateInfo.detail.Name}}</div>
+      <div class="prescription-template-detail flex-sub" v-else>
+        <div class="prescription-template-detail-scroll overflow-y-scroll scrollbar-none">
+          <section class="prescription-template-hero">
+            <div class="prescription-template-hero-main">
+              <div class="prescription-template-kicker">常用方</div>
+              <div class="prescription-template-title">{{templateInfo.detail.Name || '--'}}</div>
+            </div>
+          </section>
 
-        <div class="overflow-y-scroll scrollbar-none mt16px" style="height: calc(100vh - 350px);">
-          <a-descriptions bordered :column="2" :labelStyle="{ width: '80px' }">
-            <a-descriptions-item label="分类">{{templateInfo.detail.CategoryName}}</a-descriptions-item>
-            <a-descriptions-item label="来源">{{templateInfo.detail.Source}}</a-descriptions-item>
-            <a-descriptions-item label="功用" :span="2">{{templateInfo.detail.Effect}}</a-descriptions-item>
-            <a-descriptions-item label="主治" :span="2">{{templateInfo.detail.Indication}}</a-descriptions-item>
-            <a-descriptions-item label="加减" :span="2">{{templateInfo.detail.Modification}}</a-descriptions-item>
-          </a-descriptions>
+          <section class="prescription-template-section">
+            <div class="prescription-template-section-title">模板信息</div>
+            <a-descriptions class="prescription-template-descriptions" bordered :column="2" :labelStyle="{ width: '80px' }">
+              <a-descriptions-item label="分类">{{templateInfo.detail.CategoryName || '--'}}</a-descriptions-item>
+              <a-descriptions-item label="来源">{{templateInfo.detail.Source || '--'}}</a-descriptions-item>
+              <a-descriptions-item label="功用" :span="2">{{templateInfo.detail.Effect || '--'}}</a-descriptions-item>
+              <a-descriptions-item label="主治" :span="2">{{templateInfo.detail.Indication || '--'}}</a-descriptions-item>
+              <a-descriptions-item label="加减" :span="2">{{templateInfo.detail.Modification || '--'}}</a-descriptions-item>
+            </a-descriptions>
+          </section>
 
-          <div class="border mt16px border-rd-8px overflow-hidden border-color-[#f0f0f0]" v-if="templateInfo.materialsList.length">
-            <div class="pt8px pb8px pl16px pr16px w100% bg-[#fafbfc]">
-              <div class="flex justify-between align-center">
-                <div class="text-bold">中药处方-饮片</div>
-                <div class="color-[#4E5766]">共{{templateInfo.materialsList.length}}味药</div>
+          <section class="prescription-template-section" v-if="templateInfo.materialsList.length">
+            <div class="prescription-template-section-title">
+              <span>中药处方-饮片</span>
+              <span>共{{templateInfo.materialsList.length}}味药</span>
+            </div>
+            <div class="prescription-template-material-grid">
+              <div class="prescription-template-material-card" v-for="(item,index) in templateInfo.materialsList" :key="index">
+                <span>{{item.MaterialName || '--'}}</span>
+                <strong>{{item.Weight || '--'}}g</strong>
               </div>
             </div>
-            <a-descriptions bordered :column="3">
-              <a-descriptions-item :label="item.MaterialName" v-for="(item,index) in templateInfo.materialsList" :key="index">{{item.Weight}}g</a-descriptions-item>
-            </a-descriptions>
-            <a-space class="pt8px pb8px pl16px pr16px w100% bg-[#fafbfc]">
-              <div>{{templateInfo.detail.DoseCount}}剂</div>
-              <a-divider type="vertical" />
-              <div>{{templateInfo.detail.DosageFormName}}</div>
-              <a-divider type="vertical" />
-              <div>{{templateInfo.detail.UseMethodName}}</div>
-              <a-divider type="vertical" />
-              <div>{{templateInfo.detail.FrequencyName}}</div>
-              <a-divider type="vertical" />
-              <div>{{templateInfo.detail.EachDose}}{{templateInfo.detail.DoseUnitName}}</div>
-              <a-divider type="vertical" />
-              <div>{{templateInfo.detail.TakeTimeName}}</div>
-              <template v-if="templateInfo.detail.TakeDays">
-                <a-divider type="vertical" />
-                <div>{{templateInfo.detail.TakeDays}}天</div>
-              </template>
-            </a-space>
-          </div>
+            <div class="prescription-template-usage">
+              <span>{{templateInfo.detail.DoseCount || 1}}剂</span>
+              <span>{{templateInfo.detail.DosageFormName || '--'}}</span>
+              <span>{{templateInfo.detail.UseMethodName || '--'}}</span>
+              <span>{{templateInfo.detail.FrequencyName || '--'}}</span>
+              <span>单次剂量：{{templateInfo.detail.EachDose || '--'}}{{templateInfo.detail.DoseUnitName || ''}}</span>
+              <span>{{templateInfo.detail.TakeTimeName || '--'}}</span>
+              <span v-if="templateInfo.detail.TakeDays">{{templateInfo.detail.TakeDays}}天</span>
+            </div>
+          </section>
         </div>
         
-        <div class="flex align-center mt16px justify-between">
+        <div class="prescription-template-footer justify-between">
           <a-space>
-            <a-button type="primary" ghost @click="editTemplate('edit')">编辑</a-button>
-            <a-button type="primary" danger ghost @click="handleDeletePrescription">删除</a-button>
+            <a-button class="prescription-template-action-btn" type="primary" ghost @click="editTemplate('edit')">编辑</a-button>
+            <a-button class="prescription-template-action-btn" type="primary" danger ghost @click="handleDeletePrescription">删除</a-button>
           </a-space>
-          <a-button type="primary" v-if="isModal" @click="handleUseTemplate">使用此模板</a-button>
+          <a-button class="prescription-template-primary-btn" type="primary" v-if="isModal" @click="handleUseTemplate">使用此模板</a-button>
         </div>
       </div>
     </div>
@@ -454,14 +461,15 @@
   };
 
   const handleDeletePrescription=()=>{
+    const detail = templateInfo.value.detail?.Template || templateInfo.value.detail || {}
     Modal.confirm({
       title: '删除提示',
       centered:true,
-      content:`您确定要删除处方模板：${templateInfo.value.detail.Template.Name}？`,
+      content:`您确定要删除处方模板：${detail.Name || '当前模板'}？`,
       icon: createVNode(ExclamationCircleOutlined),
       onOk() {
         loading.value=true
-        TemplateApiCtrl.DeletePrescript({id:templateInfo.value.detail.Template.Id}).then(data => {
+        TemplateApiCtrl.DeletePrescript({id: detail.Id || templateInfo.value.id}).then(data => {
           createMessage.success(`删除成功`);
           getPrescriptList()
         }).catch(() => {}).finally(() => {loading.value=false})
@@ -486,12 +494,252 @@
   };
 </script>
 <style lang="less" scoped>
+.prescription-template-root {
+  height: 100%;
+  min-height: 100%;
+}
+
+.prescription-template-panel {
+  height: 100%;
+  min-height: 100%;
+  background: #FFFFFF;
+}
+
+.prescription-template-sidebar {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  min-height: 100%;
+  background: #F5F7FA;
+  border-right: 1px solid #E7EEF8;
+}
+
+.prescription-template-category-list {
+  min-height: 0;
+  width: 132px;
+}
+
+.prescription-template-list {
+  min-height: 0;
+}
+
+.prescription-template-category-item,
+.prescription-template-list-item {
+  transition: background-color .18s ease, color .18s ease, box-shadow .18s ease;
+}
+
+.prescription-template-category-item:hover,
+.prescription-template-list-item:hover {
+  background: #EEF5FF;
+}
+
+.prescription-template-list-item + .prescription-template-list-item {
+  margin-top: 4px;
+}
+
+.prescription-template-sidebar-actions {
+  margin-top: auto;
+  background: transparent;
+}
+
+.prescription-template-detail {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  background: #FFFFFF;
+}
+
+.prescription-template-detail-scroll {
+  flex: 1;
+  min-height: 0;
+  padding: 24px 24px 8px;
+}
+
+.prescription-template-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 92px;
+  padding: 20px 24px 20px 26px;
+  border: 1px solid #DCE6F3;
+  border-radius: 16px;
+  background: #FFFFFF;
+  box-shadow: inset 0 0 0 1px rgba(238, 245, 255, .72);
+}
+
+.prescription-template-hero::before {
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  left: 0;
+  width: 4px;
+  border-radius: 0 6px 6px 0;
+  background: #0A5AFF;
+  content: '';
+}
+
+.prescription-template-hero-main {
+  min-width: 0;
+}
+
+.prescription-template-kicker {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid #DCE6F3;
+  border-radius: 8px;
+  background: #EEF5FF;
+  color: #0A5AFF;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 18px;
+}
+
+.prescription-template-title {
+  margin-top: 10px;
+  color: #1F2B3D;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+  word-break: break-word;
+}
+
+.prescription-template-section {
+  margin-top: 16px;
+  overflow: hidden;
+  border: 1px solid #E7EEF8;
+  border-radius: 12px;
+  background: #FFFFFF;
+}
+
+.prescription-template-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px dashed #CFE0F8;
+  background: #EEF5FF;
+  color: #1F2B3D;
+  font-size: 15px;
+  font-weight: 500;
+
+  span:last-child {
+    color: #4E70A8;
+    font-size: 13px;
+    font-weight: 400;
+  }
+}
+
+.prescription-template-descriptions {
+  :deep(.ant-descriptions-view) {
+    border: 0;
+  }
+
+  :deep(.ant-descriptions-item-label) {
+    color: #5F6A7A;
+    font-weight: 400;
+    background: #FAFAFA;
+  }
+
+  :deep(.ant-descriptions-item-content) {
+    color: #000000;
+    font-weight: 400;
+    line-height: 22px;
+    white-space: pre-wrap;
+    background: #FFFFFF;
+  }
+
+  :deep(.ant-descriptions-bordered .ant-descriptions-item-label),
+  :deep(.ant-descriptions-bordered .ant-descriptions-item-content) {
+    border-color: #F0F0F0;
+  }
+}
+
+.prescription-template-material-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 12px;
+  padding: 14px 16px;
+}
+
+.prescription-template-material-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid #E7EEF8;
+  border-radius: 8px;
+  background: #FFFFFF;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    color: #1F2B3D;
+    font-size: 14px;
+    font-weight: 400;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  strong {
+    flex: none;
+    color: #0A5AFF;
+    font-size: 14px;
+    font-weight: 500;
+  }
+}
+
+.prescription-template-usage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  padding: 12px 16px;
+  border-top: 1px dashed #DCE6F3;
+  background: #F9FBFD;
+
+  span {
+    padding: 4px 10px;
+    border: 1px solid #DCE6F3;
+    border-radius: 8px;
+    background: #FFFFFF;
+    color: #4E5766;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 20px;
+  }
+}
+
+.prescription-template-footer {
+  display: flex;
+  align-items: center;
+  flex: none;
+  min-height: auto;
+  padding: 8px 24px 20px;
+  background: transparent;
+}
+
+.prescription-template-primary-btn {
+  min-width: 128px;
+}
+
+.prescription-template-action-btn {
+  border-radius: 8px;
+}
+
 .activeClassify{
   border-radius: 8px 0 0 8px;
   border-left: 3px solid #D8E4FB;
   background: #FFF;
 }
 .classifyList{
+  flex: 1;
+  min-height: 0;
+  height: auto !important;
   margin-top: -16px;
 }
 </style>

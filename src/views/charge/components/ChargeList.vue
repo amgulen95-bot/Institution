@@ -183,12 +183,54 @@
     <PaymentModal v-model:visible="paymentVisible" :orderInfo="orderInfo" @confirm="completeOperate"></PaymentModal>
     <RefundModal v-model:visible="refundVisible" :orderInfo="orderInfo" @confirm="completeOperate"></RefundModal>
     <LogisticsModal v-model:visible="logisticsVisible" :orderCode="orderCode"></LogisticsModal>
+    <a-modal
+      v-model:open="closeOrderVisible"
+      centered
+      width="560px"
+      wrapClassName="charge-close-order-modal"
+      :footer="null"
+      :closable="false"
+      :maskClosable="false"
+      destroyOnClose
+    >
+      <section class="charge-close-order-panel">
+        <div class="charge-close-order-header">
+          <div>
+            <span class="charge-close-order-badge">待收款订单</span>
+            <h3>确认关闭该订单吗？</h3>
+            <p>关闭后该订单将结束收款流程，请确认患者与金额信息无误。</p>
+          </div>
+          <button class="charge-close-order-x" type="button" @click="closeOrderVisible=false" aria-label="关闭">×</button>
+        </div>
+        <div class="charge-close-order-summary">
+          <div>
+            <span>患者姓名</span>
+            <strong>{{closeOrderRecord?.PatientName || '--'}}</strong>
+          </div>
+          <div>
+            <span>订单编号</span>
+            <strong>{{closeOrderRecord?.OrderCode || '--'}}</strong>
+          </div>
+          <div>
+            <span>待收金额</span>
+            <strong>￥{{moneyText(closeOrderRecord?.Total)}}</strong>
+          </div>
+        </div>
+        <div class="charge-close-order-note">
+          <span>提示</span>
+          <p>该操作用于取消当前待收款订单，确认关闭后将不能继续在此订单上完成收款。</p>
+        </div>
+        <div class="charge-close-order-actions">
+          <a-button size="large" @click="closeOrderVisible=false">取消</a-button>
+          <a-button size="large" danger type="primary" :loading="closeOrderSubmitting" @click="confirmCloseOrder">确认关闭订单</a-button>
+        </div>
+      </section>
+    </a-modal>
   </div>
 </template>
 <script lang="ts" setup>
-  import { ref,onMounted,reactive,computed,createVNode} from 'vue';
+  import { ref,onMounted,reactive,computed} from 'vue';
   import { useRoute, useRouter } from 'vue-router';
-  import {ExclamationCircleOutlined} from '@ant-design/icons-vue';
   import { useMessage } from '/@/hooks/web/useMessage';
   import { cloneDeep } from 'lodash-es';
   import {ChargeApiCtrl} from '/@/api/myy/charge';
@@ -199,7 +241,6 @@
   import {basicEnum} from '/@/api/platform/common';
   import PaymentModal from '/@/components/PaymentModal.vue';
   import RefundModal from '/@/components/RefundModal.vue';
-  import { Modal } from 'ant-design-vue';
   import LogisticsModal from '/@/components/LogisticsModal.vue';
 
   const props = defineProps({
@@ -226,6 +267,9 @@
   const paymentVisible=ref(false)
   const refundVisible=ref(false)
   const autoPayHandled=ref(false)
+  const closeOrderVisible=ref(false)
+  const closeOrderSubmitting=ref(false)
+  const closeOrderRecord=ref<any>(null)
   const searchParams = ref({
     Date:[],
     keyword:'',
@@ -444,20 +488,30 @@
     getChargeList()
   }
 
+  const moneyText=(value)=>{
+    const number = Number(value || 0)
+    return Number.isFinite(number) ? number.toFixed(2) : '0.00'
+  }
+
   const handleCloseOrder=(record)=>{
-    Modal.confirm({
-      title: '提示',
-      centered:true,
-      content: '确定要关闭该订单吗？',
-      icon: createVNode(ExclamationCircleOutlined),
-      onOk() {
-        table.value.loading=true
-        ChargeApiCtrl.CloseOrder({OrderCode:record.OrderCode}).then(data => {
-          createMessage.success(`操作成功`);
-          getChargeList()
-        }).catch(() => {}).finally(() => {table.value.loading=false})
-      },
-    });
+    closeOrderRecord.value=record
+    closeOrderVisible.value=true
+  }
+
+  const confirmCloseOrder=()=>{
+    const record = closeOrderRecord.value
+    if (!record?.OrderCode) return
+    closeOrderSubmitting.value=true
+    table.value.loading=true
+    ChargeApiCtrl.CloseOrder({OrderCode:record.OrderCode}).then(data => {
+      createMessage.success(`操作成功`);
+      closeOrderVisible.value=false
+      closeOrderRecord.value=null
+      getChargeList()
+    }).catch(() => {}).finally(() => {
+      closeOrderSubmitting.value=false
+      table.value.loading=false
+    })
   }
 
   const handleCopy=(record)=>{
@@ -472,4 +526,165 @@
   }
 </script>
 <style lang="less" scoped>
+:global(.charge-close-order-modal .ant-modal-content) {
+  overflow: hidden;
+  border-radius: 28px;
+  background: #FFFFFF;
+  box-shadow: 0 22px 56px rgba(31, 43, 61, .18);
+}
+
+:global(.charge-close-order-modal .ant-modal-body) {
+  padding: 0;
+}
+
+.charge-close-order-panel {
+  overflow: hidden;
+  border-radius: 28px;
+  background: #FFFFFF;
+}
+
+.charge-close-order-header {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 28px 30px 24px;
+  border-bottom: 1px dashed #DCE7F5;
+  background: #F9FBFD;
+
+  h3 {
+    margin: 12px 0 8px;
+    color: #1F2B3D;
+    font-size: 22px;
+    line-height: 30px;
+    font-weight: 500;
+  }
+
+  p {
+    margin: 0;
+    color: #6B7687;
+    font-size: 14px;
+    line-height: 22px;
+  }
+}
+
+.charge-close-order-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 2px 12px;
+  border: 1px solid #CFE0FF;
+  border-radius: 8px;
+  color: #0A5AFF;
+  font-size: 13px;
+  line-height: 20px;
+  background: #EEF5FF;
+}
+
+.charge-close-order-x {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  color: #5F6A7A;
+  font-size: 24px;
+  line-height: 32px;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color .18s ease, color .18s ease;
+
+  &:hover {
+    color: #0A5AFF;
+    background: #EEF5FF;
+  }
+}
+
+.charge-close-order-summary {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  margin: 22px 30px 18px;
+  overflow: hidden;
+  border: 1px solid #E7EEF8;
+  border-radius: 12px;
+  background: #FFFFFF;
+
+  div {
+    display: grid;
+    grid-template-columns: 104px minmax(0, 1fr);
+    min-height: 46px;
+    border-bottom: 1px dashed #DCE7F5;
+  }
+
+  div:last-child {
+    border-bottom: 0;
+  }
+
+  span,
+  strong {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding: 0 14px;
+    font-size: 14px;
+    line-height: 22px;
+  }
+
+  span {
+    color: #5F6A7A;
+    background: #F9FBFD;
+  }
+
+  strong {
+    overflow: hidden;
+    color: #1F2B3D;
+    font-weight: 400;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  div:last-child strong {
+    color: #0A5AFF;
+    font-weight: 500;
+  }
+}
+
+.charge-close-order-note {
+  display: flex;
+  gap: 12px;
+  margin: 0 30px 22px;
+  padding: 12px 14px;
+  border: 1px solid #F2DEAF;
+  border-radius: 10px;
+  background: #FFFDEC;
+
+  span {
+    flex: 0 0 auto;
+    color: #9A6700;
+    font-size: 14px;
+    line-height: 22px;
+    font-weight: 500;
+  }
+
+  p {
+    margin: 0;
+    color: #5F6A7A;
+    font-size: 14px;
+    line-height: 22px;
+  }
+}
+
+.charge-close-order-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 14px;
+  padding: 0 30px 30px;
+
+  :deep(.ant-btn) {
+    height: 44px;
+    border-radius: 8px;
+    font-weight: 400;
+  }
+}
 </style>

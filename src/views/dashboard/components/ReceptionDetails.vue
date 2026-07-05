@@ -68,15 +68,13 @@
               <div class="color-[#565E74]">共{{item.Materials.length}}味药</div>
             </div>
           </div>
-          <div class="pt24px pb12px">
-            <a-space :size="[24, 12]" wrap>
-              <div class="readonly-material-card flex justify-between align-center border border-rd-4px border-color-[#E9ECEF] pt7px pb7px pr12px pl5px position-relative" v-for="(p,i) in item.Materials" :key="i">
+          <div class="readonly-material-list">
+            <div class="readonly-material-card flex justify-between align-center border border-rd-4px border-color-[#E9ECEF] pt7px pb7px pr12px pl5px position-relative" v-for="(p,i) in item.Materials" :key="i">
               <div class="readonly-material-name">{{ materialName(p) }}</div>
               <a-divider type="vertical" />
               <div class="readonly-material-weight">{{ materialWeight(p) }}</div>
               <span>g</span>
               </div>
-            </a-space>
           </div>
           <div class="prescription-detail-plan">
             <div class="medicine-plan-bar">
@@ -187,13 +185,24 @@
 }
 
 .completed-prescription-card {
+  --completed-prescription-content-width: 100%;
+
   :deep(.ant-select) {
     pointer-events: none;
   }
 }
 
+.readonly-material-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 24px;
+  width: min(var(--completed-prescription-content-width), 100%);
+  margin-top: 24px;
+  margin-bottom: 12px;
+}
+
 .readonly-material-card {
-  width: 286px;
+  width: 100%;
   min-height: 40px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
@@ -205,7 +214,8 @@
 }
 
 .readonly-material-name {
-  width: 180px;
+  flex: 1 1 auto;
+  min-width: 0;
   padding: 0 7px;
   overflow: hidden;
   color: #313947;
@@ -235,13 +245,13 @@
     display: inline-flex;
     flex-wrap: nowrap;
     align-items: stretch;
-    width: fit-content;
+    width: min(var(--completed-prescription-content-width), 100%);
     max-width: 100%;
     min-width: 0;
     overflow: visible;
     border: 1px solid #E8EEF7;
     border-radius: 8px;
-    background: linear-gradient(180deg, #FDFEFF 0%, #F8FAFD 100%);
+    background: #E1EBFF;
     box-shadow: 0 1px 2px rgba(32, 48, 75, 0.04);
   }
 
@@ -249,7 +259,7 @@
     position: relative;
     z-index: 1;
     display: flex;
-    flex: 0 0 auto;
+    flex: 1 1 auto;
     align-items: center;
     min-height: 36px;
     margin-bottom: 0 !important;

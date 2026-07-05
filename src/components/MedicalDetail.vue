@@ -158,13 +158,31 @@
     visible:false,
     info:{},
   })
-  watch(() => props.visible, (newVal) => {
+  let visibleRequestId = 0
+
+  watch(() => props.visible, async (newVal) => {
     if (newVal) {
-      medicalModal.value.visible = true
-      if(medicalModal.value.visible){
-        getPatientDetail()
-        getVisitList()
+      const requestId = ++visibleRequestId
+      medicalModal.value.loading = true
+      medicalModal.value.visible = false
+      visitInfo.value={
+        loading:false,
+        list:[],
+        detail:{
+          Visit:{},
+          Details:[],
+          Order:{},
+        },
+        id:'',
       }
+      await Promise.all([
+        getPatientDetail(),
+        getVisitList(),
+      ])
+      if (requestId === visibleRequestId && props.visible) {
+        medicalModal.value.visible = true
+      }
+      medicalModal.value.loading = false
     }
   })
 
@@ -182,18 +200,18 @@
 
   const getPatientDetail=()=>{
     medicalModal.value.loading=true
-    PatientApiCtrl.PatientDetail({patientId:props.patientId}).then(data=>{
+    return PatientApiCtrl.PatientDetail({patientId:props.patientId}).then(data=>{
       patientInfo.value=data
     }).catch(() => {}).finally(() => {medicalModal.value.loading=false })
   }
 
   const getVisitList=()=>{
-    PatientApiCtrl.VisitList({patientId:props.patientId,page:1,limit:100}).then(data=>{
+    return PatientApiCtrl.VisitList({patientId:props.patientId,page:1,limit:100}).then(data=>{
       visitInfo.value.list=data.Rows
       if(visitInfo.value.list.length){
         const target = props.visitId ? visitInfo.value.list.find(item => item.Id == props.visitId) : null
         visitInfo.value.id=target?.Id || visitInfo.value.list[0].Id
-        seeVisitDetail()
+        return seeVisitDetail()
         
       }
     }).catch(() => {}).finally(() => {})
@@ -206,7 +224,7 @@
 
   const seeVisitDetail=()=>{
     visitInfo.value.loading=true
-    PrescriptApiCtrl.VisitDetail({id:visitInfo.value.id}).then(data=>{
+    return PrescriptApiCtrl.VisitDetail({id:visitInfo.value.id}).then(data=>{
       visitInfo.value.detail=data
     }).catch(() => {}).finally(() => {visitInfo.value.loading=false})
   }

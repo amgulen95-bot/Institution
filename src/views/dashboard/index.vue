@@ -252,12 +252,19 @@
               <div class="prescription-record-item" v-for="(item,index) in prescriptList" :key="index" @click="openPrescriptionRecordDetail(item)">
                 <div class="prescription-record-item__header">
                   <div class="prescription-record-item__name">{{ item.PrescriptName || '处方记录' }}</div>
-                  <a-tag class="prescription-record-item__tag" :bordered="false" color="processing">{{ item.StatusName }}</a-tag>
+                  <a-tag
+                    class="prescription-record-item__tag"
+                    :class="`is-${prescriptionRecordAmountInfo(item).type}`"
+                    :bordered="false"
+                  >{{ prescriptionRecordAmountInfo(item).stateName }}</a-tag>
                 </div>
                 <div class="prescription-record-item__time">{{ item.CreateTime }}</div>
                 <div class="prescription-record-item__meta">
                   <span>共{{item.MaterialCount}}味药</span>
-                  <span>¥{{ item.TotalPay }}</span>
+                  <span class="prescription-record-item__amount" :class="`is-${prescriptionRecordAmountInfo(item).type}`">
+                    <em>{{ prescriptionRecordAmountInfo(item).label }}</em>
+                    <strong>¥{{ prescriptionRecordAmountInfo(item).amount }}</strong>
+                  </span>
                 </div>
               </div>
             </div>
@@ -344,10 +351,10 @@
                 <span>{{prescriptionRecordModal.detail.Order.CreateTime || '--'}}</span>
               </div>
             </div>
-            <div class="prescription-record-detail__hero-side">
-              <div class="prescription-record-detail__status">{{prescriptionRecordModal.detail.Order.StatusName || prescriptionRecordModal.detail.Order.OrderStatusName || '--'}}</div>
-              <div class="prescription-record-detail__amount">￥{{prescriptionRecordModal.detail.Order.Total ?? '--'}}</div>
-              <div class="prescription-record-detail__amount-label">应收金额</div>
+            <div class="prescription-record-detail__hero-side" :class="`is-${prescriptionRecordAmountInfo(prescriptionRecordModal.detail.Order).type}`">
+              <div class="prescription-record-detail__status">{{prescriptionRecordAmountInfo(prescriptionRecordModal.detail.Order).stateName}}</div>
+              <div class="prescription-record-detail__amount">￥{{prescriptionRecordAmountInfo(prescriptionRecordModal.detail.Order).amount}}</div>
+              <div class="prescription-record-detail__amount-label">{{prescriptionRecordAmountInfo(prescriptionRecordModal.detail.Order).label}}</div>
             </div>
           </div>
 
@@ -406,8 +413,8 @@
             <a-descriptions class="prescription-record-detail__descriptions" :labelStyle="{ padding:'0 16px' }" :column="3">
               <a-descriptions-item label="药费">{{formatPrescriptionMedicineAmount(prescriptionRecordModal.detail.Order)}}</a-descriptions-item>
               <a-descriptions-item label="挂号费">{{prescriptionRecordModal.detail.Order.RegistrationFee ?? '--'}}</a-descriptions-item>
-              <a-descriptions-item label="应收金额">{{prescriptionRecordModal.detail.Order.Total ?? '--'}}</a-descriptions-item>
-              <a-descriptions-item label="订单状态">{{prescriptionRecordModal.detail.Order.StatusName || prescriptionRecordModal.detail.Order.OrderStatusName || '--'}}</a-descriptions-item>
+              <a-descriptions-item :label="prescriptionRecordAmountInfo(prescriptionRecordModal.detail.Order).label">{{prescriptionRecordAmountInfo(prescriptionRecordModal.detail.Order).amount}}</a-descriptions-item>
+              <a-descriptions-item label="订单状态">{{prescriptionRecordAmountInfo(prescriptionRecordModal.detail.Order).stateName}}</a-descriptions-item>
               <a-descriptions-item label="支付时间">{{prescriptionRecordModal.detail.Order.PayTime || '--'}}</a-descriptions-item>
             </a-descriptions>
           </div>
@@ -1556,19 +1563,25 @@
     return record?.OrderId || record?.OrderID || record?.Order?.Id || record?.Id || ''
   }
 
+  let prescriptionRecordRequestId = 0
+
   const openPrescriptionRecordDetail=(record)=>{
     const orderId = getPrescriptionRecordOrderId(record)
     if(!orderId){
       createMessage.warning('未找到对应处方记录')
       return
     }
-    prescriptionRecordModal.value.visible=true
+    const requestId = ++prescriptionRecordRequestId
     prescriptionRecordModal.value.loading=true
     prescriptionRecordModal.value.detail=emptyPrescriptionRecordDetail()
     OrderApiCtrl.OrderDetail({orderId}).then(data=>{
+      if(requestId !== prescriptionRecordRequestId) return
       prescriptionRecordModal.value.detail=data || emptyPrescriptionRecordDetail()
+      prescriptionRecordModal.value.visible=true
     }).catch(() => {}).finally(() => {
-      prescriptionRecordModal.value.loading=false
+      if(requestId === prescriptionRecordRequestId){
+        prescriptionRecordModal.value.loading=false
+      }
     })
   }
 
@@ -1605,6 +1618,71 @@
   const formatPrescriptionMedicineAmount=(order)=>{
     const amount = Number(order?.OriginalAmount || 0) + Number(order?.RetailMarkupAmount || 0) + Number(order?.PremiumAmount || 0)
     return amount ? amount.toFixed(2) : '--'
+  }
+
+  const formatPrescriptionRecordMoney=(value)=>{
+    if(value === null || value === undefined || value === '') return '--'
+    const amount = Number(value)
+    return Number.isFinite(amount) ? amount.toFixed(2) : String(value)
+  }
+
+  const prescriptionRecordStatusText=(record)=>{
+    return firstText(
+      record?.StatusName,
+      record?.OrderStatusName,
+      record?.ChargeStatusName,
+      record?.RefundStatusName,
+      record?.StatusText,
+      record?.Order?.StatusName,
+      record?.Order?.OrderStatusName
+    ) || '--'
+  }
+
+  const prescriptionRecordRawAmount=(record, type)=>{
+    const order = record?.Order || record || {}
+    if(type === 'refunding' || type === 'refunded'){
+      return firstText(order.RefundAmount, order.RefundTotal, order.ReturnAmount, order.TotalPay, order.Total)
+    }
+    return firstText(order.TotalPay, order.Total, order.ReceivableAmount, order.AmountReceivable)
+  }
+
+  const prescriptionRecordAmountInfo=(record)=>{
+    const order = record?.Order || record || {}
+    const statusText = prescriptionRecordStatusText(order)
+    const status = Number(order.ChargeStatus)
+    const text = `${statusText}${order.RefundStatusName || ''}`
+    let type = 'normal'
+    let label = '订单金额'
+    let stateName = statusText
+
+    if(text.includes('取消') || text.includes('关闭')){
+      type = 'cancelled'
+      label = '订单金额'
+      stateName = statusText === '--' ? '已取消' : statusText
+    }else if(text.includes('已退款') || text.includes('退款完成')){
+      type = 'refunded'
+      label = '已退金额'
+      stateName = statusText === '--' ? '已退款' : statusText
+    }else if(text.includes('退款中') || text.includes('退货') || text.includes('售后') || text.includes('退款')){
+      type = 'refunding'
+      label = '退款金额'
+      stateName = statusText === '--' ? '退款中' : statusText
+    }else if(status === 0 || text.includes('待收') || text.includes('代收') || text.includes('待付款') || text.includes('待支付')){
+      type = 'pending'
+      label = '待收金额'
+      stateName = statusText === '--' ? '待收款' : statusText
+    }else if(status === 1 || text.includes('已收') || text.includes('已付款') || text.includes('已支付')){
+      type = 'paid'
+      label = '实收金额'
+      stateName = statusText === '--' ? '已收款' : statusText
+    }
+
+    return {
+      type,
+      label,
+      stateName,
+      amount: formatPrescriptionRecordMoney(prescriptionRecordRawAmount(order, type)),
+    }
   }
 
   const seeRootExtraction=()=>{
@@ -1727,7 +1805,7 @@
   overflow: hidden;
   color: #1F2B3D;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 22px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1794,7 +1872,7 @@
   overflow: hidden;
   color: #1F2B3D;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 22px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1803,6 +1881,32 @@
   flex: 0 0 auto;
   margin-right: 0;
   font-size: 12px;
+}
+
+.prescription-record-item__tag.is-pending,
+.prescription-record-detail__hero-side.is-pending .prescription-record-detail__status {
+  color: @primary-color;
+  background: #EEF5FF;
+}
+
+.prescription-record-item__tag.is-paid,
+.prescription-record-item__tag.is-refunded,
+.prescription-record-detail__hero-side.is-paid .prescription-record-detail__status,
+.prescription-record-detail__hero-side.is-refunded .prescription-record-detail__status {
+  color: #0F7A4F;
+  background: #F1FBF6;
+}
+
+.prescription-record-item__tag.is-refunding,
+.prescription-record-detail__hero-side.is-refunding .prescription-record-detail__status {
+  color: #9A6700;
+  background: #FFF9E8;
+}
+
+.prescription-record-item__tag.is-cancelled,
+.prescription-record-detail__hero-side.is-cancelled .prescription-record-detail__status {
+  color: #5F6A7A;
+  background: #F4F7F9;
 }
 .prescription-record-item__time {
   margin-top: 4px;
@@ -1824,10 +1928,43 @@
   font-size: 12px;
   line-height: 18px;
 
-  span:last-child {
-    color: @primary-color;
-    font-weight: 600;
+}
+.prescription-record-item__amount {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  flex: 0 0 auto;
+
+  em {
+    color: #7A8494;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 400;
   }
+
+  strong {
+    color: #1F2B3D;
+    font-size: 13px;
+    font-weight: 400;
+  }
+}
+.prescription-record-item__amount.is-pending strong,
+.prescription-record-detail__hero-side.is-pending .prescription-record-detail__amount {
+  color: @primary-color;
+}
+.prescription-record-item__amount.is-paid strong,
+.prescription-record-item__amount.is-refunded strong,
+.prescription-record-detail__hero-side.is-paid .prescription-record-detail__amount,
+.prescription-record-detail__hero-side.is-refunded .prescription-record-detail__amount {
+  color: #0F7A4F;
+}
+.prescription-record-item__amount.is-refunding strong,
+.prescription-record-detail__hero-side.is-refunding .prescription-record-detail__amount {
+  color: #B7791F;
+}
+.prescription-record-item__amount.is-cancelled strong,
+.prescription-record-detail__hero-side.is-cancelled .prescription-record-detail__amount {
+  color: #5F6A7A;
 }
 .prescription-record-footer {
   flex: 0 0 auto;

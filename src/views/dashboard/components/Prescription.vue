@@ -51,7 +51,7 @@
           </div>
 
           <div class="pt24px pb0px pl16px pr16px" v-if="!item.ProId">
-            <a-space :size="[24, 12]" wrap>
+            <div class="prescription-material-grid">
               <MaterialInput
                 v-for="(p, i) in item.Materials" 
                 :key="i"
@@ -65,10 +65,10 @@
                 @add-new="item.Materials.push({ Sort: 1, MaterialId: null, MaterialName: '', Weight: null })"
                 @update:weight="$emit('doseChange')"
               />
-            </a-space>
+            </div>
           </div>
           <div class="pt24px pb0px pl16px pr16px" v-else>
-            <a-space :size="[24, 12]" wrap>
+            <div class="prescription-material-grid">
               <template v-for="(p, i) in readonlyMaterials(item)" :key="i">
                 <div class="template-material-readonly flex justify-between align-center border border-rd-4px border-color-[#E9ECEF] pt7px pb7px pr12px pl5px position-relative">
                   <a-input class="w180px template-material-name" size="small" :value="p.MaterialName" :bordered="false" readonly />
@@ -77,7 +77,7 @@
                   <span>g</span>
                 </div>
               </template>
-            </a-space>
+            </div>
           </div>
 
           <div class="pl16px pr8px pb8px">
@@ -197,18 +197,34 @@
     </a-form>
 
 
-    <a-modal v-model:open="templateModal.visible" title="保存为常用方模板" centered width="600px" wrapClassName="dashboard-prescription-modal" @ok="saveTemplate" :maskClosable="false" destroyOnClose>
-      <section class="padding-lr32">
-        <a-form :model="templateModal.form" :labelCol="{ style: 'width: 100px' }" :wrapperCol="{span:16}" :rules="templateModal.rules" ref="templateFormIns">
-          <a-form-item label="模板分类" name="CategoryId">
-            <a-select v-model:value="templateModal.form.CategoryId" placeholder="请选择" allowClear showSearch optionFilterProp="title">
-              <a-select-option :value="item.Id" v-for="(item,index) in categoryList" :key="index" :title="item.Name">{{item.Name}}</a-select-option>
-            </a-select>
-          </a-form-item>
-          <a-form-item label="模板名称" name="Name">
-            <a-input v-model:value="templateModal.form.Name" placeholder="请填写"></a-input>
-          </a-form-item>
+    <a-modal v-model:open="templateModal.visible" centered width="640px" wrapClassName="dashboard-prescription-modal prescription-save-template-modal" :footer="null" :maskClosable="false" destroyOnClose>
+      <section class="prescription-save-template">
+        <div class="prescription-save-template-hero">
+          <div class="prescription-save-template-main">
+            <div class="prescription-save-template-kicker">保存模板</div>
+            <div class="prescription-save-template-title">保存为常用方模板</div>
+            <div class="prescription-save-template-desc">沉淀当前处方组合，后续开方可快速调用。</div>
+          </div>
+        </div>
+
+        <a-form class="prescription-save-template-form" :model="templateModal.form" :labelCol="{ style: 'width: 104px' }" :wrapperCol="{span:18}" :rules="templateModal.rules" ref="templateFormIns">
+          <div class="prescription-save-template-section">
+            <div class="prescription-save-template-section-title">模板基础信息</div>
+            <a-form-item label="模板分类" name="CategoryId">
+              <a-select class="prescription-save-template-control" v-model:value="templateModal.form.CategoryId" placeholder="请选择" allowClear showSearch optionFilterProp="title" dropdownClassName="prescription-save-template-select-dropdown" :listHeight="224" :virtual="false">
+                <a-select-option :value="item.Id" v-for="(item,index) in categoryList" :key="index" :title="item.Name">{{item.Name}}</a-select-option>
+              </a-select>
+            </a-form-item>
+            <a-form-item label="模板名称" name="Name">
+              <a-input class="prescription-save-template-control" v-model:value="templateModal.form.Name" placeholder="请填写"></a-input>
+            </a-form-item>
+          </div>
         </a-form>
+
+        <div class="prescription-save-template-footer">
+          <a-button class="prescription-save-template-btn" @click="templateModal.visible=false">取消</a-button>
+          <a-button class="prescription-save-template-btn prescription-save-template-primary" type="primary" :loading="templateModal.loading" @click="saveTemplate">保存模板</a-button>
+        </div>
       </section>
     </a-modal>
 
@@ -979,6 +995,26 @@
   max-width: 890px;
 }
 
+.prescription-material-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 12px;
+  width: 890px;
+  max-width: 890px;
+}
+
+.prescription-material-grid :deep(.material-input-wrapper),
+.prescription-material-grid .template-material-readonly {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.prescription-material-grid .template-material-name {
+  flex: 1;
+  min-width: 0;
+}
+
 .prescription-note-field {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
@@ -1077,5 +1113,154 @@
 :global(.dashboard-prescription-modal .ant-modal-content) {
   border-radius: 28px;
   overflow: hidden;
+}
+:global(.prescription-save-template-modal .ant-modal-content) {
+  padding: 0;
+  background: #FFFFFF;
+}
+:global(.prescription-save-template-modal .ant-modal-close) {
+  top: 18px;
+  right: 18px;
+  border-radius: 8px;
+}
+:global(.prescription-save-template-modal .ant-modal-close:hover) {
+  background: #EEF5FF;
+}
+.prescription-save-template {
+  padding: 24px 26px 22px;
+  background: #FFFFFF;
+}
+.prescription-save-template-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 18px 22px 18px 24px;
+  border: 1px solid #DCE6F3;
+  border-radius: 16px;
+  background: #FFFFFF;
+  box-shadow: inset 0 0 0 1px rgba(238, 245, 255, .72);
+}
+.prescription-save-template-hero::before {
+  position: absolute;
+  top: 18px;
+  bottom: 18px;
+  left: 0;
+  width: 4px;
+  border-radius: 0 6px 6px 0;
+  background: #0A5AFF;
+  content: '';
+}
+.prescription-save-template-main {
+  min-width: 0;
+}
+.prescription-save-template-kicker {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border: 1px solid #DCE6F3;
+  border-radius: 8px;
+  background: #EEF5FF;
+  color: #0A5AFF;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 18px;
+}
+.prescription-save-template-title {
+  margin-top: 10px;
+  color: #1F2B3D;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+}
+.prescription-save-template-desc {
+  margin-top: 8px;
+  color: #5F6A7A;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 20px;
+  white-space: nowrap;
+}
+.prescription-save-template-form {
+  margin-top: 16px;
+}
+.prescription-save-template-section {
+  overflow: hidden;
+  border: 1px solid #E7EEF8;
+  border-radius: 12px;
+  background: #FFFFFF;
+}
+.prescription-save-template-section-title {
+  padding: 12px 16px;
+  border-bottom: 1px dashed #CFE0F8;
+  background: #EEF5FF;
+  color: #1F2B3D;
+  font-size: 15px;
+  font-weight: 500;
+}
+.prescription-save-template-section :deep(.ant-form-item) {
+  margin: 0;
+  padding: 14px 18px;
+  border-bottom: 1px solid #F0F0F0;
+}
+.prescription-save-template-section :deep(.ant-form-item:last-child) {
+  border-bottom: none;
+}
+.prescription-save-template-section :deep(.ant-form-item-label > label) {
+  color: #5F6A7A;
+  font-weight: 400;
+}
+.prescription-save-template-section :deep(.ant-form-item-explain) {
+  margin-top: 4px;
+  font-size: 12px;
+}
+.prescription-save-template-control {
+  width: 100%;
+}
+.prescription-save-template-control :deep(.ant-select-selector),
+:deep(.prescription-save-template-control.ant-input) {
+  border-radius: 8px !important;
+}
+.prescription-save-template-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 18px;
+}
+.prescription-save-template-btn {
+  min-width: 96px;
+  height: 36px;
+  border-radius: 8px !important;
+  font-weight: 400;
+}
+.prescription-save-template-primary {
+  min-width: 128px;
+}
+:global(.prescription-save-template-select-dropdown) {
+  padding: 6px;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(32, 48, 75, .12);
+}
+:global(.prescription-save-template-select-dropdown .rc-virtual-list-holder) {
+  overflow-y: auto !important;
+  scrollbar-width: thin;
+  scrollbar-color: #CFE0F8 transparent;
+}
+:global(.prescription-save-template-select-dropdown .ant-select-item) {
+  min-height: 34px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  color: #1F2B3D;
+  font-size: 14px;
+  font-weight: 400;
+  transition: background-color .16s ease, color .16s ease;
+}
+:global(.prescription-save-template-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled)) {
+  background: #EEF5FF;
+}
+:global(.prescription-save-template-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled)) {
+  background: #E1EBFF;
+  color: #0A5AFF;
+  font-weight: 400;
 }
 </style>
