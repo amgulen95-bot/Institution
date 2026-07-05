@@ -92,8 +92,7 @@
               <template v-if="!item.ProId">
                 <a-form-item class="medicine-plan-item medicine-plan-item-dosage medicine-plan-item-editable" :name="['list', index, 'DosageForm']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
                   <div class="medicine-plan-field medicine-plan-field-dosage border-rd-4px bg-[#F6F8FC] flex align-center text-bold pl8px whitespace-nowrap" :class="{'medicine-plan-field-filled': item.DosageForm}">
-                    <div>剂型：</div>
-                    <a-select :ref="(el) => setMedicinePlanRef(el, index, 'DosageForm')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.DosageForm" placeholder="请选择" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'UseMethod')">
+                    <a-select :ref="(el) => setMedicinePlanRef(el, index, 'DosageForm')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.DosageForm" placeholder="剂型" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'UseMethod')">
                       <a-select-option :value="String(item.id)" v-for="(item,index) in MedicineType" :key="index">{{item.name}}</a-select-option>
                     </a-select>
                   </div>
@@ -107,37 +106,32 @@
                 </a-form-item>
                 <a-form-item class="medicine-plan-item medicine-plan-item-frequency medicine-plan-item-editable" :name="['list', index, 'Frequency']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
                   <div class="medicine-plan-field medicine-plan-field-frequency border-rd-4px bg-[#F6F8FC] flex align-center text-bold pl8px whitespace-nowrap" :class="{'medicine-plan-field-filled': item.Frequency}">
-                    <div>每日次数：</div>
-                    <a-select :ref="(el) => setMedicinePlanRef(el, index, 'Frequency')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.Frequency" placeholder="请选择" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'EachDose')">
+                    <a-select :ref="(el) => setMedicinePlanRef(el, index, 'Frequency')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.Frequency" placeholder="每日次数" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'EachDose')">
                       <a-select-option :value="String(item.id)" v-for="(item,index) in ChineseMedicineDailyFrequency" :key="index">{{item.name}}</a-select-option>
                     </a-select>
                   </div>
                 </a-form-item>
                 <a-form-item class="medicine-plan-item medicine-plan-item-each-dose medicine-plan-item-editable" :name="['list', index, 'EachDose']" :rules="{validator: validateEachDose, trigger: 'blur'}">
                   <div class="medicine-plan-field medicine-plan-field-each-dose border-rd-4px bg-[#F6F8FC] flex align-center text-bold pt5px pb5px pl8px" :class="{'medicine-plan-field-filled': item.EachDose}">
-                    <div>单次剂量：</div>
-                    <a-input-number :ref="(el) => setMedicinePlanRef(el, index, 'EachDose')" style="width:34px !important;" id="inputNumber" size="small" :controls="false" v-model:value="item.EachDose" :bordered="false" :min="0.01" placeholder="输入" @focus="selectMedicinePlanNumber" @blur="normalizeMedicinePlanNumber(index, 'EachDose', { required: true, min: 0.01 })" @pressEnter="focusMedicinePlanField(index, 'DoseUnit')" />
+                    <a-input-number :ref="(el) => setMedicinePlanRef(el, index, 'EachDose')" style="width:56px !important;" id="inputNumber" size="small" :controls="false" v-model:value="item.EachDose" :bordered="false" :min="0.01" placeholder="单次剂量" @focus="selectMedicinePlanNumber" @blur="normalizeMedicinePlanNumber(index, 'EachDose', { required: true, min: 0.01 })" @pressEnter="focusMedicinePlanField(index, 'DoseUnit')" />
                   </div>
                 </a-form-item>
                 <a-form-item class="medicine-plan-item medicine-plan-item-unit medicine-plan-item-editable" :name="['list', index, 'DoseUnit']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
                   <div class="medicine-plan-field medicine-plan-field-unit border-rd-4px bg-[#F6F8FC] flex align-center text-bold pl8px whitespace-nowrap" :class="{'medicine-plan-field-filled': item.DoseUnit}">
-                    <div>剂量单位：</div>
-                    <a-select :ref="(el) => setMedicinePlanRef(el, index, 'DoseUnit')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.DoseUnit" placeholder="请选择" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'TakeTime')">
+                    <a-select :ref="(el) => setMedicinePlanRef(el, index, 'DoseUnit')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.DoseUnit" placeholder="剂量单位" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'TakeTime')">
                       <a-select-option :value="item.id" v-for="(item,index) in ChineseMedicineDoseUnit" :key="index">{{item.name}}</a-select-option>
                     </a-select>
                   </div>
                 </a-form-item>
                 <a-form-item class="medicine-plan-item medicine-plan-item-time medicine-plan-item-editable" :name="['list', index, 'TakeTime']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
                   <div class="medicine-plan-field medicine-plan-field-time border-rd-4px bg-[#F6F8FC] flex align-center text-bold pl8px whitespace-nowrap" :class="{'medicine-plan-field-filled': item.TakeTime}">
-                    <div>服用时间：</div>
-                    <a-select :ref="(el) => setMedicinePlanRef(el, index, 'TakeTime')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.TakeTime" placeholder="请选择" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'TakeDays')">
+                    <a-select :ref="(el) => setMedicinePlanRef(el, index, 'TakeTime')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.TakeTime" placeholder="服用时间" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'TakeDays')">
                       <a-select-option :value="String(item.id)" v-for="(item,index) in ChineseMedicineMedicationTime" :key="index">{{item.name}}</a-select-option>
                     </a-select>
                   </div>
                 </a-form-item>
                 <a-form-item class="medicine-plan-item medicine-plan-item-days medicine-plan-item-editable">
                   <div class="medicine-plan-field medicine-plan-field-days border-rd-4px bg-[#F6F8FC] flex align-center text-bold pt5px pb5px pr8px" :class="{'medicine-plan-field-filled': item.TakeDays}">
-                    <div>服药天数：</div>
                     <a-input-number :ref="(el) => setMedicinePlanRef(el, index, 'TakeDays')" id="inputNumber" style="width:42px !important;" :controls="false" size="small" v-model:value="item.TakeDays" :bordered="false" placeholder="选填" :min="1" :precision="0" @focus="selectMedicinePlanNumber" @blur="normalizeMedicinePlanNumber(index, 'TakeDays', { integer: true, min: 1 })" />
                     <div>天</div>
                   </div>
@@ -146,7 +140,6 @@
               <template v-else>
                 <a-form-item class="medicine-plan-item medicine-plan-item-dosage">
                   <div class="medicine-plan-field medicine-plan-field-readonly medicine-plan-field-dosage medicine-plan-field-filled border-rd-4px bg-[#F6F8FC] flex align-center text-bold pl8px whitespace-nowrap">
-                    <div>剂型：</div>
                     <span>{{ medicineTypeText(item) }}</span>
                   </div>
                 </a-form-item>
@@ -157,35 +150,30 @@
                 </a-form-item>
                 <a-form-item class="medicine-plan-item medicine-plan-item-frequency medicine-plan-item-editable" :name="['list', index, 'Frequency']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
                   <div class="medicine-plan-field medicine-plan-field-frequency border-rd-4px bg-[#F6F8FC] flex align-center text-bold pl8px whitespace-nowrap" :class="{'medicine-plan-field-filled': item.Frequency}">
-                    <div>每日次数：</div>
-                    <a-select :ref="(el) => setMedicinePlanRef(el, index, 'Frequency')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.Frequency" placeholder="请选择" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'EachDose')">
+                    <a-select :ref="(el) => setMedicinePlanRef(el, index, 'Frequency')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.Frequency" placeholder="每日次数" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'EachDose')">
                       <a-select-option :value="String(item.id)" v-for="(item,index) in ChineseMedicineDailyFrequency" :key="index">{{item.name}}</a-select-option>
                     </a-select>
                   </div>
                 </a-form-item>
                 <a-form-item class="medicine-plan-item medicine-plan-item-each-dose medicine-plan-item-editable" :name="['list', index, 'EachDose']" :rules="{validator: validateEachDose, trigger: 'blur'}">
                   <div class="medicine-plan-field medicine-plan-field-each-dose border-rd-4px bg-[#F6F8FC] flex align-center text-bold pt5px pb5px pl8px" :class="{'medicine-plan-field-filled': item.EachDose}">
-                    <div>单次剂量：</div>
-                    <a-input-number :ref="(el) => setMedicinePlanRef(el, index, 'EachDose')" style="width:34px !important;" id="inputNumber" size="small" :controls="false" v-model:value="item.EachDose" :bordered="false" :min="0.01" placeholder="输入" @focus="selectMedicinePlanNumber" @blur="normalizeMedicinePlanNumber(index, 'EachDose', { required: true, min: 0.01 })" @pressEnter="focusMedicinePlanField(index, 'TakeTime')" />
+                    <a-input-number :ref="(el) => setMedicinePlanRef(el, index, 'EachDose')" style="width:56px !important;" id="inputNumber" size="small" :controls="false" v-model:value="item.EachDose" :bordered="false" :min="0.01" placeholder="单次剂量" @focus="selectMedicinePlanNumber" @blur="normalizeMedicinePlanNumber(index, 'EachDose', { required: true, min: 0.01 })" @pressEnter="focusMedicinePlanField(index, 'TakeTime')" />
                   </div>
                 </a-form-item>
                 <a-form-item class="medicine-plan-item medicine-plan-item-unit">
                   <div class="medicine-plan-field medicine-plan-field-readonly medicine-plan-field-unit medicine-plan-field-filled border-rd-4px bg-[#F6F8FC] flex align-center text-bold pl8px whitespace-nowrap">
-                    <div>剂量单位：</div>
                     <span>{{ doseUnitText(item) }}</span>
                   </div>
                 </a-form-item>
                 <a-form-item class="medicine-plan-item medicine-plan-item-time medicine-plan-item-editable" :name="['list', index, 'TakeTime']" :rules="{required: true,message: '该项必须选择',trigger: 'change'}">
                   <div class="medicine-plan-field medicine-plan-field-time border-rd-4px bg-[#F6F8FC] flex align-center text-bold pl8px whitespace-nowrap" :class="{'medicine-plan-field-filled': item.TakeTime}">
-                    <div>服用时间：</div>
-                    <a-select :ref="(el) => setMedicinePlanRef(el, index, 'TakeTime')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.TakeTime" placeholder="请选择" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'TakeDays')">
+                    <a-select :ref="(el) => setMedicinePlanRef(el, index, 'TakeTime')" class="border-rd-4px bg-[#F6F8FC]" v-model:value="item.TakeTime" placeholder="服用时间" :bordered="false" allowClear dropdownClassName="medicine-plan-select-popup" :listHeight="220" :virtual="false" @change="focusMedicinePlanField(index, 'TakeDays')">
                       <a-select-option :value="String(item.id)" v-for="(item,index) in ChineseMedicineMedicationTime" :key="index">{{item.name}}</a-select-option>
                     </a-select>
                   </div>
                 </a-form-item>
                 <a-form-item class="medicine-plan-item medicine-plan-item-days medicine-plan-item-editable">
                   <div class="medicine-plan-field medicine-plan-field-days border-rd-4px bg-[#F6F8FC] flex align-center text-bold pt5px pb5px pr8px" :class="{'medicine-plan-field-filled': item.TakeDays}">
-                    <div>服药天数：</div>
                     <a-input-number :ref="(el) => setMedicinePlanRef(el, index, 'TakeDays')" id="inputNumber" style="width:42px !important;" :controls="false" size="small" v-model:value="item.TakeDays" :bordered="false" placeholder="选填" :min="1" :precision="0" @focus="selectMedicinePlanNumber" @blur="normalizeMedicinePlanNumber(index, 'TakeDays', { integer: true, min: 1 })" />
                     <div>天</div>
                   </div>
@@ -193,13 +181,13 @@
               </template>
               </div>
             </div>
-            <div class="flex justify-between align-center mt12px" v-if="!item.ProId">
+            <div class="prescription-note-row flex justify-between align-center mt12px" v-if="!item.ProId">
               <div class="prescription-note-field flex-sub border-rd-8px border border-color-[#F3F4F7] flex align-center px12px py7px">
-                <div class="text-bold whitespace-nowrap line-height-22px">服药建议</div>
+                <div class="prescription-note-label whitespace-nowrap line-height-22px">服药建议</div>
                 <a-textarea size="small" v-model:value="item.Advice" :rows="1" :bordered="false" :auto-size="{ minRows: 1, maxRows: 1}" placeholder="请输入服药建议" />
               </div>
               <div class="prescription-note-field flex-sub border-rd-8px border border-color-[#F3F4F7] flex align-center px12px py7px ml12px">
-                <div class="text-bold whitespace-nowrap line-height-22px">其他备注</div>
+                <div class="prescription-note-label whitespace-nowrap line-height-22px">其他备注</div>
                 <a-textarea size="small" v-model:value="item.Remark" :rows="1" :bordered="false" :auto-size="{ minRows: 1, maxRows: 1}" placeholder="请输入服药建议" />
               </div>
             </div>
@@ -729,10 +717,9 @@
 .medicinePlan {
   align-items: center;
   max-width: 100%;
-  overflow-x: auto;
+  overflow-x: visible;
   overflow-y: visible;
   padding: 0 4px 0 0;
-  scrollbar-width: thin;
 
   :deep(.ant-input-number-input) {
     text-align: right;
@@ -742,8 +729,9 @@
     display: inline-flex;
     flex-wrap: nowrap;
     align-items: stretch;
-    min-width: max-content;
-    max-width: none;
+    width: fit-content;
+    max-width: 100%;
+    min-width: 0;
     margin-top: 20px;
     overflow: visible;
     border: 1px solid #E8EEF7;
@@ -879,40 +867,45 @@
   }
 
   .medicine-plan-item-count {
-    width: 80px;
+    width: 74px;
   }
 
   .medicine-plan-item-dosage {
-    width: 180px;
+    width: 116px;
   }
 
   .medicine-plan-item-method {
-    width: 138px;
+    width: 146px;
   }
 
   .medicine-plan-item-frequency {
-    width: 208px;
+    width: 116px;
   }
 
   .medicine-plan-item-each-dose {
-    width: 134px;
+    width: 80px;
   }
 
   .medicine-plan-item-unit {
-    width: 164px;
+    width: 102px;
   }
 
   .medicine-plan-item-time {
-    width: 240px;
+    width: 176px;
   }
 
   .medicine-plan-item-days {
-    width: 156px;
+    width: 80px;
   }
 
   .medicine-plan-field-count {
     min-width: 0;
-    padding-right: 12px !important;
+    padding: 5px 22px 5px 0 !important;
+
+    :deep(.ant-input-number) {
+      width: 28px !important;
+      flex: 0 0 28px;
+    }
   }
 
   .medicine-plan-field-dosage {
@@ -981,6 +974,11 @@
   }
 }
 
+.prescription-note-row {
+  width: 890px;
+  max-width: 890px;
+}
+
 .prescription-note-field {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
@@ -994,6 +992,10 @@
     line-height: 22px;
     resize: none;
   }
+}
+
+.prescription-note-label {
+  font-weight: 400;
 }
 
 .template-material-readonly {

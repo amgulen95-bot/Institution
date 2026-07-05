@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="completed-detail-view">
     <div class="flex align-center justify-between flex-wrap">
       <div class="flex align-center py8px px16px bg-[#fff] border-rd-8px mb8px gap24px whitespace-nowrap">
         <div class="flex align-center">
@@ -180,6 +180,12 @@
   border-radius: 12px;
 }
 
+.completed-detail-view {
+  width: var(--dashboard-center-card-width, 960px);
+  margin-right: auto;
+  margin-left: auto;
+}
+
 .completed-prescription-card {
   :deep(.ant-select) {
     pointer-events: none;
@@ -220,21 +226,23 @@
 }
 
 .prescription-detail-plan {
-  overflow-x: auto;
+  overflow-x: visible;
   overflow-y: visible;
   margin-top: 12px;
-  padding: 0 8px 8px 0;
-  scrollbar-width: thin;
+  padding: 0;
 
   .medicine-plan-bar {
     display: inline-flex;
     flex-wrap: nowrap;
     align-items: stretch;
-    min-width: max-content;
+    width: fit-content;
+    max-width: 100%;
+    min-width: 0;
     overflow: visible;
-    border: 1px solid #c8d6f3;
+    border: 1px solid #E8EEF7;
     border-radius: 8px;
-    background: #E1EBFF;
+    background: linear-gradient(180deg, #FDFEFF 0%, #F8FAFD 100%);
+    box-shadow: 0 1px 2px rgba(32, 48, 75, 0.04);
   }
 
   .medicine-plan-item {
@@ -242,24 +250,21 @@
     z-index: 1;
     display: flex;
     flex: 0 0 auto;
-    align-items: stretch;
-    min-height: 34px;
+    align-items: center;
+    min-height: 36px;
     margin-bottom: 0 !important;
+    border: 1px solid transparent;
+    border-left: 1px dashed #AFC2E8;
+    border-radius: 0;
     background: #E1EBFF;
 
-    &::after {
-      position: absolute;
-      top: 7px;
-      right: 0;
-      bottom: 7px;
-      width: 0;
-      border-right: 1px dashed #9fb3d9;
-      content: '';
-      pointer-events: none;
+    &:first-child {
+      border-left-color: transparent;
+      border-radius: 8px 0 0 8px;
     }
 
-    &:last-child::after {
-      display: none;
+    &:last-child {
+      border-radius: 0 8px 8px 0;
     }
   }
 
@@ -293,40 +298,54 @@
 
   .medicine-plan-number {
     display: inline-block;
-    width: 32px;
+    width: 28px;
     text-align: right;
   }
 
   .medicine-plan-item-count {
-    width: 80px;
+    width: 74px;
   }
 
   .medicine-plan-item-dosage {
-    width: 180px;
+    width: 116px;
   }
 
   .medicine-plan-item-method {
-    width: 138px;
+    width: 146px;
   }
 
   .medicine-plan-item-frequency {
-    width: 208px;
+    width: 116px;
   }
 
   .medicine-plan-item-each-dose {
-    width: 134px;
+    width: 80px;
   }
 
   .medicine-plan-item-unit {
-    width: 164px;
+    width: 102px;
   }
 
   .medicine-plan-item-time {
-    width: 240px;
+    width: 176px;
   }
 
   .medicine-plan-item-days {
-    width: 156px;
+    width: 80px;
+  }
+
+  .medicine-plan-field-count {
+    min-width: 0;
+    padding: 5px 22px 5px 0 !important;
+  }
+
+  .medicine-plan-field-dosage > span:first-child,
+  .medicine-plan-field-frequency > span:first-child,
+  .medicine-plan-field-each-dose > span:first-child,
+  .medicine-plan-field-unit > span:first-child,
+  .medicine-plan-field-time > span:first-child,
+  .medicine-plan-field-days > span:first-child {
+    display: none;
   }
 }
 </style>

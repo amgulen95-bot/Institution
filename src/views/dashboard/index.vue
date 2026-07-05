@@ -1,7 +1,7 @@
 <template>
   <div class="p-4 home" v-loading="loading">
-    <div class="flex justify-between" style="height: calc(100vh - 192px);">
-      <a-card class="dashboard-card-radius h-100% overflow-hidden w-380px">
+    <div class="dashboard-prescription-layout flex justify-between" style="height: calc(100vh - 192px);">
+      <a-card class="dashboard-side-panel dashboard-card-radius h-100% overflow-hidden w-380px">
         <div class="text-18px text-bold">今日接诊</div>
         <div class="flex align-center mt16px mb12px">
           <a-input-search v-model:value="todayVisit.searchParams.keyword" placeholder="搜索患者姓名、手机号" @search="handleTabChange" />
@@ -48,7 +48,7 @@
       </a-card>
       <div class="min-w600px flex-sub ml16px h-100% overflow-y-scroll pb12px scrollbar-none receptionPanel today-visit-content-panel" :class="{ 'today-visit-content-switching': todayVisitSwitching || todayVisitDetailSwitching }">
         <template v-if="isEditableVisit">
-          <div class="flex justify-between align-center flex-wrap">
+          <div class="dashboard-center-safe-card flex justify-between align-center flex-wrap">
             <div class="flex justify-between align-center flex-wrap">
               <a-space class="patient-info-card pt2px pb2px pl16px pr16px bg-[#fff] border-rd-8px mb8px" :size="24">
                 <a-popover :open="patientModal.visible && patientSearchField === 'name'" placement="bottomLeft" :trigger="[]" overlayClassName="patient-search-popover" :destroyTooltipOnHide="false" >
@@ -114,10 +114,10 @@
               </div>
             </div>
           </div>
-          <div class="bg-[#fff] border-rd-12px border border-color-[#e8cf9e] overflow-hidden">
+          <div class="dashboard-center-safe-card bg-[#fff] border-rd-12px border border-color-[#e8cf9e] overflow-hidden">
             <Medical v-model:visit-form="visitForm" ref="medicalRef"></Medical>
           </div>
-          <a-card class="dashboard-card-radius mt16px">
+          <a-card class="dashboard-center-safe-card dashboard-card-radius mt16px">
             <Prescription v-model:prescription-list="prescriptionList" ref="prescriptionRef" @add="handleCalculateFee" @doseChange="handleCalculateFee"></Prescription>
           </a-card>
           <!-- <a-card class="mt16px">
@@ -145,7 +145,7 @@
             </div>
           </a-card> -->
 
-          <a-card class="mt16px pb12px">
+          <a-card class="dashboard-center-safe-card mt16px pb12px">
             <a-space :size="[12,12]" wrap>
               <div class="text-16px text-bold">
                 <div>开方</div>
@@ -204,7 +204,7 @@
         </template>
         <ReceptionDetails :data="visitInfo.detail" v-else></ReceptionDetails>
       </div>
-      <div class="w-380px ml16px h-100% overflow-y-scroll scrollbar-none today-visit-content-panel" :class="{ 'today-visit-content-switching': todayVisitSwitching || todayVisitDetailSwitching }">
+      <div class="dashboard-side-panel dashboard-right-panel w-380px ml16px h-100% overflow-y-scroll scrollbar-none today-visit-content-panel" :class="{ 'today-visit-content-switching': todayVisitSwitching || todayVisitDetailSwitching }">
         <a-card class="dashboard-card-radius otherCard" title="就诊历史" style="height: calc(50% - 12px);">
           <template #extra v-if="historyList.length">
             <div class="color-[#A5A8B4] pointer" @click="medicalModalVisible=true">
@@ -1441,6 +1441,36 @@
   border-radius: 12px;
 }
 
+.home {
+  --dashboard-center-card-width: 960px;
+  --dashboard-side-panel-width: 340px;
+  --dashboard-right-panel-width: 340px;
+  overflow-x: auto;
+}
+
+.dashboard-prescription-layout {
+  width: max(100%, calc(var(--dashboard-center-card-width) + var(--dashboard-side-panel-width) + var(--dashboard-right-panel-width) + 32px));
+  min-width: calc(var(--dashboard-center-card-width) + var(--dashboard-side-panel-width) + var(--dashboard-right-panel-width) + 32px);
+}
+
+.dashboard-center-safe-card {
+  width: var(--dashboard-center-card-width);
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.dashboard-side-panel {
+  width: var(--dashboard-side-panel-width) !important;
+  max-width: var(--dashboard-side-panel-width);
+  flex: 0 0 var(--dashboard-side-panel-width);
+}
+
+.dashboard-right-panel {
+  width: var(--dashboard-right-panel-width) !important;
+  max-width: var(--dashboard-right-panel-width);
+  flex-basis: var(--dashboard-right-panel-width);
+}
+
 .home ::v-deep(.ant-card-body){
   height: 100% !important;
 }
@@ -1673,6 +1703,35 @@
   &::after {
     right: -8px;
     border-radius: 0 8px 8px 0;
+  }
+}
+.receptionPanel {
+  flex-shrink: 0;
+}
+
+@media (max-width: 1680px) {
+  .home {
+    --dashboard-side-panel-width: 336px;
+    --dashboard-right-panel-width: 336px;
+  }
+}
+@media (max-width: 1440px) {
+  .home {
+    --dashboard-side-panel-width: 328px;
+    --dashboard-right-panel-width: 328px;
+  }
+}
+@media (max-width: 1280px) {
+  .home {
+    --dashboard-side-panel-width: 320px;
+    --dashboard-right-panel-width: 320px;
+  }
+}
+@media (max-width: 1180px) {
+  .home {
+    --dashboard-center-card-width: 900px;
+    --dashboard-side-panel-width: 312px;
+    --dashboard-right-panel-width: 312px;
   }
 }
 .visit-type-field,
