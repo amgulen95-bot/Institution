@@ -59,11 +59,13 @@
   import {PatientApiCtrl} from '/@/api/myy/patient';
   import {AccountApiCtrl} from '/@/api/myy/account';
   import { useGo } from '/@/hooks/web/usePage';
+  import { useRoute } from 'vue-router';
   import { useUserStore } from '@/store/modules/user';
   import {ChargeApiCtrl} from '/@/api/myy/charge';
   import PaymentModal from '/@/components/PaymentModal.vue';
   
   const go = useGo();
+  const route = useRoute();
   const physicianList=ref([])
   const userStore = useUserStore()
   const ClinicRole=ref(1)
@@ -73,6 +75,7 @@
     Date:[],
     keyword:'',
     docId:null,
+    patientId:'',
     hasOrder:true,
   })
   const table =ref({
@@ -109,6 +112,7 @@
   })
 
   onMounted(() => {
+    searchParams.value.patientId = route.query.patientId ? String(route.query.patientId) : ''
     ClinicRole.value=userStore.getUserInfo.Doctor.ClinicRole
     if(ClinicRole.value==2){
       searchParams.value.docId=userStore.getUserInfo.Doctor.DoctorId
@@ -128,6 +132,7 @@
       Date:[],
       keyword:'',
       docId:null,
+      patientId:'',
       hasOrder:true,
     }
     getRootExtractionRecord(true)

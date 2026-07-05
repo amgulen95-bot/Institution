@@ -207,7 +207,7 @@
       <div class="dashboard-side-panel dashboard-right-panel w-380px ml16px h-100% overflow-y-scroll scrollbar-none today-visit-content-panel" :class="{ 'today-visit-content-switching': todayVisitSwitching || todayVisitDetailSwitching }">
         <a-card class="dashboard-card-radius otherCard" title="就诊历史" style="height: calc(50% - 12px);">
           <template #extra v-if="historyList.length">
-            <div class="color-[#A5A8B4] pointer" @click="medicalModalVisible=true">
+            <div class="color-[#A5A8B4] pointer" @click="openAllMedicalHistory">
               <span>更多</span>
               <RightOutlined />
             </div>
@@ -217,7 +217,7 @@
               <a-steps class="visit-history-steps" progress-dot :current="1" direction="vertical">
                 <a-step v-for="(item,index) in historyList" :key="index">
                   <template #title>
-                    <div class="visit-history-item">
+                    <div class="visit-history-item" @click.stop="openVisitMedicalDetail(item)">
                       <div class="visit-history-item__main">
                         <div class="visit-history-item__diagnosis">{{item.Diagnosis || '--'}}</div>
                         <a-tag class="visit-history-item__tag" :bordered="false" color="success" v-if="item.VisitType==0">初诊</a-tag>
@@ -229,7 +229,7 @@
                 </a-step>
               </a-steps>
             </div>
-            <div class="text-center mt24px" @click="medicalModalVisible=true">
+            <div class="text-center mt24px" @click="openAllMedicalHistory">
               <a-button type="primary" ghost>
                 <span>查看全部就诊记录</span>
                 <RightOutlined />
@@ -247,30 +247,28 @@
               <RightOutlined />
             </div>
           </template>
-          <a-card border class="h-100%" v-if="prescriptList.length">
-            <div class="overflow-y-scroll scrollbar-none" style="height: calc(100% - 16px);">
-              <div class="pb16px border-b border-color-[#F3F4F7] mb16px" v-for="(item,index) in prescriptList" :key="index">
-                <div class="flex">
-                  <div class="flex-sub text-bold">{{ item.PrescriptName }}</div>
-                  <a-tag :bordered="false" color="processing">{{ item.StatusName }}</a-tag>
+          <div class="prescription-record-panel" v-if="prescriptList.length">
+            <div class="prescription-record-list">
+              <div class="prescription-record-item" v-for="(item,index) in prescriptList" :key="index" @click="openPrescriptionRecordDetail(item)">
+                <div class="prescription-record-item__header">
+                  <div class="prescription-record-item__name">{{ item.PrescriptName || '处方记录' }}</div>
+                  <a-tag class="prescription-record-item__tag" :bordered="false" color="processing">{{ item.StatusName }}</a-tag>
                 </div>
-                <a-space class="mt4px color-[#4E5766] text-12px">
-                  <div>{{ item.CreateTime }}</div>
-                  <a-divider type="vertical" />
-                  <div>共{{item.MaterialCount}}味药</div>
-                  <a-divider type="vertical" />
-                  <div>¥{{ item.TotalPay }}</div>
-                </a-space>
+                <div class="prescription-record-item__time">{{ item.CreateTime }}</div>
+                <div class="prescription-record-item__meta">
+                  <span>共{{item.MaterialCount}}味药</span>
+                  <span>¥{{ item.TotalPay }}</span>
+                </div>
               </div>
             </div>
-            <div class="text-center mt24px">
-              <a-button type="primary" ghost @click="seeRootExtraction">
+            <div class="prescription-record-footer">
+              <a-button class="prescription-record-more-btn" type="primary" ghost @click="seeRootExtraction">
                 <span>查看全部处方记录</span>
                 <RightOutlined />
               </a-button>
             </div>
-          </a-card>
-          <div class="flex justify-center align-center flex-direction" v-else style="height: calc(100% - 16px);">
+          </div>
+          <div class="prescription-record-empty" v-else>
             <a-empty  />
           </div>
         </a-card>
@@ -322,8 +320,100 @@
     <ConfirmPayment v-model:visible="payModal.visible" :payInfo="payModal.info" wrap-class-name="dashboard-confirm-payment-modal" @confirm="confirmPay"></ConfirmPayment>
 
     <template v-if="patientModal.form.Id">
-      <MedicalDetail v-model:visible="medicalModalVisible" :patientId="patientModal.form.Id" :type="1" wrap-class-name="dashboard-medical-detail-modal"></MedicalDetail>
+      <MedicalDetail v-model:visible="medicalModalVisible" :patientId="patientModal.form.Id" :visit-id="selectedMedicalVisitId" :type="1" wrap-class-name="dashboard-medical-detail-modal"></MedicalDetail>
     </template>
+    <a-modal
+      v-model:open="prescriptionRecordModal.visible"
+      title="处方记录详情"
+      centered
+      width="1000px"
+      :footer="null"
+      :maskClosable="false"
+      destroyOnClose
+      wrap-class-name="dashboard-prescription-record-detail-modal"
+    >
+      <section class="prescription-record-detail" v-loading="prescriptionRecordModal.loading">
+        <div class="prescription-record-detail__body">
+          <div class="prescription-record-detail__hero">
+            <div class="prescription-record-detail__hero-main">
+              <div class="prescription-record-detail__eyebrow">处方记录</div>
+              <div class="prescription-record-detail__order-code">{{prescriptionRecordModal.detail.Order.OrderCode || '--'}}</div>
+              <div class="prescription-record-detail__subline">
+                <span>{{prescriptionRecordModal.detail.Visit.PatientName || '--'}}</span>
+                <span>{{prescriptionRecordModal.detail.Visit.PatientGender==1?'男':'女'}} / {{prescriptionRecordModal.detail.Visit.PatientAge || '--'}}岁</span>
+                <span>{{prescriptionRecordModal.detail.Order.CreateTime || '--'}}</span>
+              </div>
+            </div>
+            <div class="prescription-record-detail__hero-side">
+              <div class="prescription-record-detail__status">{{prescriptionRecordModal.detail.Order.StatusName || prescriptionRecordModal.detail.Order.OrderStatusName || '--'}}</div>
+              <div class="prescription-record-detail__amount">￥{{prescriptionRecordModal.detail.Order.Total ?? '--'}}</div>
+              <div class="prescription-record-detail__amount-label">应收金额</div>
+            </div>
+          </div>
+
+          <div class="prescription-record-detail__section">
+            <div class="prescription-record-detail__title">
+              <span>订单与患者信息</span>
+            </div>
+            <a-descriptions class="prescription-record-detail__descriptions" :labelStyle="{ padding:'0 16px' }" :column="4">
+              <a-descriptions-item label="开方日期">{{prescriptionRecordModal.detail.Order.CreateTime || '--'}}</a-descriptions-item>
+              <a-descriptions-item label="接诊医师">{{prescriptionRecordModal.detail.Order.DocName || '--'}}</a-descriptions-item>
+              <a-descriptions-item label="初复诊">{{prescriptionRecordModal.detail.Visit.VisitType==0?'初诊':'复诊'}}</a-descriptions-item>
+              <a-descriptions-item label="患者姓名">{{prescriptionRecordModal.detail.Visit.PatientName || '--'}}</a-descriptions-item>
+              <a-descriptions-item label="性别年龄">{{prescriptionRecordModal.detail.Visit.PatientGender==1?'男':'女'}}/{{prescriptionRecordModal.detail.Visit.PatientAge || '--'}}岁</a-descriptions-item>
+              <a-descriptions-item label="手机号码">{{prescriptionRecordModal.detail.Visit.PatientPhone || '--'}}</a-descriptions-item>
+              <a-descriptions-item label="病历号">{{prescriptionRecordModal.detail.Visit.Id || '--'}}</a-descriptions-item>
+            </a-descriptions>
+          </div>
+
+          <div class="prescription-record-detail__section mt16px" v-for="(item,index) in prescriptionRecordModal.detail.Details" :key="index">
+            <div class="prescription-record-detail__title flex justify-between align-center">
+              <span>处方及药品明细</span>
+              <span class="prescription-record-detail__count">共{{item.Materials?.length || 0}}味药</span>
+            </div>
+            <div class="prescription-record-detail__materials">
+              <div class="prescription-record-detail__material" v-for="(p,i) in item.Materials" :key="i">
+                <span class="prescription-record-detail__material-name">{{p.Name}}</span>
+                <span class="prescription-record-detail__material-weight">{{p.Weight}}g</span>
+              </div>
+            </div>
+            <div class="prescription-record-detail__summary">
+              <span>{{doseCountText(item.Detail)}}剂</span>
+              <span>{{dosageFormText(item.Detail) || '--'}}</span>
+              <span>{{useMethodText(item.Detail) || '--'}}</span>
+              <span>{{frequencyText(item.Detail) || '--'}}</span>
+              <span>单次剂量：{{eachDoseText(item.Detail) || '--'}}{{doseUnitText(item.Detail) || ''}}</span>
+              <span>{{takeTimeText(item.Detail) || '--'}}</span>
+              <span>{{takeDaysText(item.Detail) ? `${takeDaysText(item.Detail)}天` : '--'}}</span>
+            </div>
+          </div>
+
+          <div class="prescription-record-detail__section mt16px">
+            <div class="prescription-record-detail__title">
+              <span>本次就诊病历摘要</span>
+            </div>
+            <a-descriptions class="prescription-record-detail__descriptions" :labelStyle="{ padding:'0 16px' }" :column="1">
+              <a-descriptions-item label="主诉">{{prescriptionRecordModal.detail.Visit.ChiefComplaint || '--'}}</a-descriptions-item>
+              <a-descriptions-item label="现病史">{{prescriptionRecordModal.detail.Visit.PresentIllness || '--'}}</a-descriptions-item>
+              <a-descriptions-item label="诊断">{{prescriptionRecordModal.detail.Visit.Diagnosis || '--'}}</a-descriptions-item>
+            </a-descriptions>
+          </div>
+
+          <div class="prescription-record-detail__section mt16px">
+            <div class="prescription-record-detail__title">
+              <span>费用与支付信息</span>
+            </div>
+            <a-descriptions class="prescription-record-detail__descriptions" :labelStyle="{ padding:'0 16px' }" :column="3">
+              <a-descriptions-item label="药费">{{formatPrescriptionMedicineAmount(prescriptionRecordModal.detail.Order)}}</a-descriptions-item>
+              <a-descriptions-item label="挂号费">{{prescriptionRecordModal.detail.Order.RegistrationFee ?? '--'}}</a-descriptions-item>
+              <a-descriptions-item label="应收金额">{{prescriptionRecordModal.detail.Order.Total ?? '--'}}</a-descriptions-item>
+              <a-descriptions-item label="订单状态">{{prescriptionRecordModal.detail.Order.StatusName || prescriptionRecordModal.detail.Order.OrderStatusName || '--'}}</a-descriptions-item>
+              <a-descriptions-item label="支付时间">{{prescriptionRecordModal.detail.Order.PayTime || '--'}}</a-descriptions-item>
+            </a-descriptions>
+          </div>
+        </div>
+      </section>
+    </a-modal>
     
   </div>
 </template>
@@ -365,8 +455,27 @@
   const medicalRef=ref()
   const saveType=ref(1)
   const ClinicVisitStatus=ref([])
+  const ChineseMedicineUseMethod=ref([])
+  const ChineseMedicineDailyFrequency=ref([])
+  const MedicineType=ref([])
+  const ChineseMedicineDoseUnit=ref([])
+  const ChineseMedicineMedicationTime=ref([])
   const prescriptList=ref([])
   const medicalModalVisible=ref(false)
+  const selectedMedicalVisitId=ref('')
+  const emptyPrescriptionRecordDetail = () => ({
+    Details:[],
+    Income:{},
+    Order:{},
+    Patient:{},
+    PeachOrder:null,
+    Visit:{},
+  })
+  const prescriptionRecordModal=ref({
+    visible:false,
+    loading:false,
+    detail: emptyPrescriptionRecordDetail(),
+  })
   const anonymousInfo={
     Id:'',
     PatientName:'',
@@ -531,6 +640,21 @@
   const getBasicEnum=()=>{
     basicEnum({name:'ClinicVisitStatus'}).then(data=>{
       ClinicVisitStatus.value=data
+    })
+    basicEnum({name:'ChineseMedicineUseMethod'}).then(data=>{
+      ChineseMedicineUseMethod.value=data
+    })
+    basicEnum({name:'MedicineType'}).then(data=>{
+      MedicineType.value=data
+    })
+    basicEnum({name:'ChineseMedicineDailyFrequency'}).then(data=>{
+      ChineseMedicineDailyFrequency.value=data
+    })
+    basicEnum({name:'ChineseMedicineDoseUnit'}).then(data=>{
+      ChineseMedicineDoseUnit.value=data
+    })
+    basicEnum({name:'ChineseMedicineMedicationTime'}).then(data=>{
+      ChineseMedicineMedicationTime.value=data
     })
   }
 
@@ -1418,8 +1542,74 @@
     }
   }
 
+  const openAllMedicalHistory=()=>{
+    selectedMedicalVisitId.value=''
+    medicalModalVisible.value=true
+  }
+
+  const openVisitMedicalDetail=(record)=>{
+    selectedMedicalVisitId.value=record?.Id || ''
+    medicalModalVisible.value=true
+  }
+
+  const getPrescriptionRecordOrderId=(record)=>{
+    return record?.OrderId || record?.OrderID || record?.Order?.Id || record?.Id || ''
+  }
+
+  const openPrescriptionRecordDetail=(record)=>{
+    const orderId = getPrescriptionRecordOrderId(record)
+    if(!orderId){
+      createMessage.warning('未找到对应处方记录')
+      return
+    }
+    prescriptionRecordModal.value.visible=true
+    prescriptionRecordModal.value.loading=true
+    prescriptionRecordModal.value.detail=emptyPrescriptionRecordDetail()
+    OrderApiCtrl.OrderDetail({orderId}).then(data=>{
+      prescriptionRecordModal.value.detail=data || emptyPrescriptionRecordDetail()
+    }).catch(() => {}).finally(() => {
+      prescriptionRecordModal.value.loading=false
+    })
+  }
+
+  const normalizeNumberText = (value) => {
+    if (value === null || value === undefined || value === '') return ''
+    const matched = String(value).match(/\d+(\.\d+)?/)
+    return matched ? matched[0] : String(value)
+  }
+
+  const firstText = (...values) => {
+    const value = values.find(item => item !== null && item !== undefined && item !== '')
+    return value === undefined ? '' : String(value)
+  }
+
+  const enumName=(list, id)=>{
+    if (id === null || id === undefined || id === '') return ''
+    const match = list.value.find(item => String(item.id) === String(id))
+    return match?.name || ''
+  }
+
+  const doseCountText = (detail) => normalizeNumberText(firstText(detail?.Count, detail?.DoseCount)) || '1'
+  const dosageFormText = (detail) => firstText(detail?.MedicineTypeName, detail?.DosageFormName, enumName(MedicineType, detail?.DosageForm), detail?.Unit)
+  const useMethodText = (detail) => firstText(detail?.UseMethodName, enumName(ChineseMedicineUseMethod, detail?.UseMethod), detail?.UseMethod)
+  const frequencyText = (detail) => firstText(detail?.DailyFrequencyName, detail?.FrequencyName, enumName(ChineseMedicineDailyFrequency, detail?.Frequency), detail?.DailyFrequency, detail?.Frequency, detail?.Dosage)
+  const eachDoseText = (detail) => normalizeNumberText(firstText(detail?.PerDoseAmount, detail?.EachDose))
+  const doseUnitText = (detail) => firstText(detail?.DoseUnitName, enumName(ChineseMedicineDoseUnit, detail?.DoseUnit), detail?.DoseUnit)
+  const takeTimeText = (detail) => firstText(detail?.TakeTimeName, enumName(ChineseMedicineMedicationTime, detail?.TakeTime), detail?.TakeTime)
+  const takeDaysText = (detail) => normalizeNumberText(firstText(detail?.CertNumber, detail?.TimeFrame, detail?.TakeDays))
+
+  const formatUseMethod=(id)=>{
+    return ChineseMedicineUseMethod.value.find(p=>p.id==id)?.name || id || '--'
+  }
+
+  const formatPrescriptionMedicineAmount=(order)=>{
+    const amount = Number(order?.OriginalAmount || 0) + Number(order?.RetailMarkupAmount || 0) + Number(order?.PremiumAmount || 0)
+    return amount ? amount.toFixed(2) : '--'
+  }
+
   const seeRootExtraction=()=>{
-    go('/rootExtraction')
+    const patientId = patientModal.value.form.Id || visitInfo.value.detail?.Visit?.PatientId || ''
+    go(patientId ? `/rootExtraction?patientId=${encodeURIComponent(patientId)}` : '/rootExtraction')
   }
 
   const confirmPay=(e)=>{
@@ -1483,8 +1673,14 @@
   }
 }
 .visit-history-steps {
+  padding-left: 3px;
+
   :deep(.ant-steps-item) {
     padding-bottom: 4px;
+  }
+
+  :deep(.ant-steps-item-container) {
+    overflow: visible;
   }
 
   :deep(.ant-steps-item-content) {
@@ -1547,6 +1743,315 @@
   font-size: 13px;
   font-weight: 400;
   line-height: 18px;
+}
+.prescription-record-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.prescription-record-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.prescription-record-list::-webkit-scrollbar {
+  width: 6px;
+}
+.prescription-record-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(143, 164, 196, 0.28);
+}
+.prescription-record-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.prescription-record-item {
+  position: relative;
+  padding: 10px 10px 11px 12px;
+  border-bottom: 1px dashed #E8EEF7;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    border-color: #D7E4F8;
+    background: #EEF5FF;
+    box-shadow: 0 0 0 2px fade(@primary-color, 8%), 0 4px 10px rgba(32, 48, 75, 0.05);
+  }
+}
+.prescription-record-item + .prescription-record-item {
+  margin-top: 6px;
+}
+.prescription-record-item__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.prescription-record-item__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: #1F2B3D;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 22px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prescription-record-item__tag {
+  flex: 0 0 auto;
+  margin-right: 0;
+  font-size: 12px;
+}
+.prescription-record-item__time {
+  margin-top: 4px;
+  overflow: hidden;
+  color: #6C7583;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prescription-record-item__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 7px;
+  color: #4E5766;
+  font-size: 12px;
+  line-height: 18px;
+
+  span:last-child {
+    color: @primary-color;
+    font-weight: 600;
+  }
+}
+.prescription-record-footer {
+  flex: 0 0 auto;
+  padding-top: 12px;
+  text-align: center;
+}
+.prescription-record-more-btn {
+  border-radius: 8px !important;
+}
+.prescription-record-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(100% - 16px);
+}
+.prescription-record-detail {
+  margin: -4px -8px -8px;
+  padding: 0 24px 24px;
+  background: linear-gradient(180deg, #F9FBFD 0%, #FFFFFF 34%);
+}
+.prescription-record-detail__body {
+  max-height: calc(100vh - 240px);
+  overflow-y: auto;
+  padding: 4px 4px 0 0;
+}
+.prescription-record-detail__body::-webkit-scrollbar {
+  width: 6px;
+}
+.prescription-record-detail__body::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(143, 164, 196, 0.28);
+}
+.prescription-record-detail__body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.prescription-record-detail__hero {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding: 18px 20px;
+  border: 1px solid #E7EEF8;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 28px rgba(32, 48, 75, 0.06);
+}
+.prescription-record-detail__hero-main {
+  flex: 1;
+  min-width: 0;
+}
+.prescription-record-detail__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #E1EBFF;
+  color: @primary-color;
+  font-size: 13px;
+  font-weight: 400;
+}
+.prescription-record-detail__order-code {
+  margin-top: 12px;
+  overflow: hidden;
+  color: #1F2B3D;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 26px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prescription-record-detail__subline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin-top: 8px;
+  color: #5F6A7A;
+  font-size: 13px;
+  line-height: 20px;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  span + span::before {
+    width: 1px;
+    height: 12px;
+    margin: 0 10px;
+    border-left: 1px dashed #DCE6F3;
+    content: '';
+  }
+}
+.prescription-record-detail__hero-side {
+  display: flex;
+  flex: 0 0 210px;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  padding-left: 18px;
+  border-left: 1px dashed #DCE6F3;
+}
+.prescription-record-detail__status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: #EEF5FF;
+  color: @primary-color;
+  font-size: 13px;
+  font-weight: 400;
+}
+.prescription-record-detail__amount {
+  margin-top: 10px;
+  color: @primary-color;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 30px;
+}
+.prescription-record-detail__amount-label {
+  margin-top: 2px;
+  color: #7A8494;
+  font-size: 12px;
+}
+.prescription-record-detail__section {
+  overflow: hidden;
+  border: 1px solid #E7EEF8;
+  border-radius: 14px;
+  background: #FFFFFF;
+}
+.prescription-record-detail__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px dashed #DCE6F3;
+  background: #FDFCFA;
+  color: #1F2B3D;
+  font-size: 16px;
+  font-weight: 500;
+}
+.prescription-record-detail__count {
+  color: #5F6A7A;
+  font-size: 14px;
+  font-weight: 400;
+}
+.prescription-record-detail__descriptions {
+  padding-bottom: 12px;
+}
+.prescription-record-detail__materials {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px 10px;
+  padding: 0 16px 12px;
+}
+.prescription-record-detail__material {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px dashed #DCE6F3;
+  border-radius: 8px;
+  background: #F9FBFD;
+}
+.prescription-record-detail__material-name {
+  min-width: 0;
+  overflow: hidden;
+  color: #1F2B3D;
+  font-size: 14px;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prescription-record-detail__material-weight {
+  flex: 0 0 auto;
+  color: @primary-color;
+  font-size: 14px;
+  font-weight: 500;
+}
+.prescription-record-detail__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+  padding: 10px 16px;
+  border-top: 1px dashed #DCE6F3;
+  background: #F9FBFD;
+  color: #4E5766;
+  font-size: 14px;
+  line-height: 22px;
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+  }
+
+  span + span::before {
+    width: 1px;
+    height: 12px;
+    margin: 0 10px;
+    border-left: 1px dashed #DCE6F3;
+    content: '';
+  }
+}
+.prescription-record-detail__summary :deep(.ant-divider-vertical) {
+  border-left-color: #DCE6F3;
+}
+:global(.dashboard-prescription-record-detail-modal .ant-modal-content) {
+  border-radius: 28px;
+  overflow: hidden;
+}
+:global(.dashboard-prescription-record-detail-modal .ant-modal-header) {
+  margin-bottom: 0;
+  padding: 20px 24px 14px;
+  border-bottom: 1px dashed #DCE6F3;
+}
+:global(.dashboard-prescription-record-detail-modal .ant-modal-body) {
+  padding-top: 18px;
 }
 .ant-input {
   &-number,
