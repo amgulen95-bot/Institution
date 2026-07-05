@@ -1,8 +1,8 @@
 <template>
-  <div>
-    <a-card v-loading="loading">
-      <div class="flex">
-        <div class="flex-sub p-16px border-rd-12px bg-[#EEF3FB] flex align-center justify-between">
+  <div class="charge-list-page">
+    <a-card class="charge-list-summary-card" v-loading="loading">
+      <div class="charge-list-summary-grid flex">
+        <div class="charge-list-stat-card flex-sub p-16px border-rd-12px bg-[#EEF3FB] flex align-center justify-between">
           <div class="flex align-center">
             <img class="w52px h52px border-rd-50%" src="../../../assets/images/statisticsIcon1.png" alt="">
             <div class="ml12px">
@@ -12,10 +12,10 @@
           </div>
           <div class="text-bold">
             <span class="text-16px">￥</span>
-            <span class="text-32px">{{summaryInfo.TotalAmount}}</span>
+            <span class="text-32px">{{moneyText(summaryInfo.TotalAmount)}}</span>
           </div>
         </div>
-        <div class="flex-sub ml16px p-16px border-rd-12px bg-[#EEF3FB] flex align-center justify-between">
+        <div class="charge-list-stat-card flex-sub ml16px p-16px border-rd-12px bg-[#EEF3FB] flex align-center justify-between">
           <div class="flex align-center">
             <img class="w52px h52px border-rd-50%" src="../../../assets/images/statisticsIcon2.png" alt="">
             <div class="ml12px">
@@ -25,10 +25,10 @@
           </div>
           <div class="text-bold">
             <span class="text-16px">￥</span>
-            <span class="text-32px">{{summaryInfo.OnlineAmount}}</span>
+            <span class="text-32px">{{moneyText(summaryInfo.OnlineAmount)}}</span>
           </div>
         </div>
-        <div class="flex-sub ml16px p-16px border-rd-12px bg-[#EEF3FB] flex align-center justify-between">
+        <div class="charge-list-stat-card flex-sub ml16px p-16px border-rd-12px bg-[#EEF3FB] flex align-center justify-between">
           <div class="flex align-center">
             <img class="w52px h52px border-rd-50%" src="../../../assets/images/statisticsIcon3.png" alt="">
             <div class="ml12px">
@@ -38,10 +38,10 @@
           </div>
           <div class="text-bold">
             <span class="text-16px">￥</span>
-            <span class="text-32px">{{summaryInfo.CashAmount}}</span>
+            <span class="text-32px">{{moneyText(summaryInfo.CashAmount)}}</span>
           </div>
         </div>
-        <div class="flex-sub ml16px p-16px border-rd-12px bg-[#EEF3FB] flex align-center justify-between">
+        <div class="charge-list-stat-card flex-sub ml16px p-16px border-rd-12px bg-[#EEF3FB] flex align-center justify-between">
           <div class="flex align-center">
             <img class="w52px h52px border-rd-50%" src="../../../assets/images/statisticsIcon4.png" alt="">
             <div class="ml12px">
@@ -51,47 +51,49 @@
           </div>
           <div class="text-bold">
             <span class="text-16px">￥</span>
-            <span class="text-32px">{{summaryInfo.PendingAmount}}</span>
+            <span class="text-32px">{{moneyText(summaryInfo.PendingAmount)}}</span>
           </div>
         </div>
       </div>
     </a-card>
-    <a-card class="mt16px">
-      <a-flex justify="space-between" align="flex-start">
-        <a-space :size="[24,0]" wrap>
+    <a-card class="charge-list-table-card mt16px">
+      <a-flex class="charge-list-filter-panel" justify="space-between" align="center">
+        <a-space :size="[20,0]" wrap>
           <a-form-item label="开方日期">
             <a-range-picker v-model:value="searchParams.Date" :placeholder="['开始日期', '结束日期']" valueFormat="YYYY-MM-DD" :get-popup-container="(trigger) => trigger.parentElement" />
           </a-form-item>
           <a-form-item label="关键字">
-            <a-input v-model:value="searchParams.keyword" placeholder="订单编号/患者姓名/手机号/患者号" allowClear />
+            <a-input class="charge-list-keyword" v-model:value="searchParams.keyword" placeholder="订单编号/患者姓名/手机号/患者号" allowClear />
           </a-form-item>
-          <a-form-item label="开单医师" class="w240px" v-if="ClinicRole==1">
-            <a-select  v-model:value="searchParams.docId" placeholder="请选择" allowClear showSearch optionFilterProp="title">
+          <a-form-item label="开单医师" class="charge-list-filter-select" v-if="ClinicRole==1">
+            <a-select  v-model:value="searchParams.docId" placeholder="请选择" allowClear showSearch optionFilterProp="title" dropdownClassName="charge-list-select-dropdown" :listHeight="220" :virtual="false" :get-popup-container="(trigger) => trigger.parentElement">
               <a-select-option :value="item.id" v-for="(item,index) in physicianList" :key="index" :title="item.name">{{item.name}}</a-select-option>
             </a-select>
           </a-form-item>
-          <a-form-item label="订单状态" class="w240px" v-if="props.chargeStatus==1">
-            <a-select  v-model:value="searchParams.status" placeholder="请选择" allowClear>
+          <a-form-item label="订单状态" class="charge-list-filter-select" v-if="props.chargeStatus==1">
+            <a-select  v-model:value="searchParams.status" placeholder="请选择" allowClear showSearch optionFilterProp="title" dropdownClassName="charge-list-select-dropdown" :listHeight="220" :virtual="false" :get-popup-container="(trigger) => trigger.parentElement">
               <a-select-option :value="item.id" v-for="(item,index) in MYYOrderStatus" :key="index">{{item.name}}</a-select-option>
             </a-select>
           </a-form-item>
-          <a-form-item label="支付方式" class="w240px" v-if="props.chargeStatus!=0">
-            <a-select  v-model:value="searchParams.payType" placeholder="请选择" allowClear>
+          <a-form-item label="支付方式" class="charge-list-filter-select" v-if="props.chargeStatus!=0">
+            <a-select  v-model:value="searchParams.payType" placeholder="请选择" allowClear showSearch optionFilterProp="title" dropdownClassName="charge-list-select-dropdown" :listHeight="220" :virtual="false" :get-popup-container="(trigger) => trigger.parentElement">
               <a-select-option :value="item.id" v-for="(item,index) in ClinicPayType" :key="index">{{item.name}}</a-select-option>
             </a-select>
           </a-form-item>
         </a-space>
-        <a-space>
-          <a-button @click="handleResetFilter">重置筛选</a-button>
-          <a-button type="primary" @click="getChargeList(true)">筛选查询</a-button>
+        <a-space class="charge-list-filter-actions">
+          <a-button class="charge-list-action-button" @click="handleResetFilter">重置筛选</a-button>
+          <a-button class="charge-list-action-button" type="primary" @click="getChargeList(true)">筛选查询</a-button>
         </a-space>
       </a-flex>
-      <a-table :data-source="table.list"
+      <div class="charge-list-table-scroll">
+      <a-table class="charge-list-table"
+                :data-source="table.list"
                 :columns="props.chargeStatus==0?columns1:props.chargeStatus==1?columns2:columns3"
                 row-key="Id"
                 :loading="table.loading"
                 :pagination="pagination"
-                :scroll="{x:1000,y:'calc(100vh - 450px)'}">
+                :scroll="{x:tableScrollX}">
         <template #bodyCell="{column,record,index}">
           <template v-if="column.dataIndex == 'PatientName'">
             <div class="flex align-center">
@@ -115,19 +117,19 @@
             <div class="mt8px">{{computeRegionData(record.RegionData)}}{{record.ReceiverAddress}}</div>
           </template>
           <template v-if="column.dataIndex == 'AmountReceivable'">
-            <div class="color-[#F74344] text-bold">
+            <div class="charge-list-money color-[#F74344] text-bold">
               <span class="text-10px">￥</span>
-              <span class="text-18px">{{record.Total}}</span>
+              <span class="text-18px">{{moneyText(record.Total)}}</span>
             </div>
-            <div class="color-[#4E5766] mt4px">含药费:￥{{(record.OriginalAmount+record.RetailMarkupAmount+record.PremiumAmount).toFixed(2)}}； 挂号费:￥{{record.RegistrationFee}}</div>
+            <div class="charge-list-money-detail color-[#4E5766] mt4px">含药费:￥{{moneyText(record.OriginalAmount+record.RetailMarkupAmount+record.PremiumAmount)}}； 挂号费:￥{{moneyText(record.RegistrationFee)}}</div>
           </template>
           <template v-if="column.dataIndex == 'RefundAmount'">
             <div>{{ClinicPayType.find(p=>p.id==record.PayType)?.name}}</div>
-            <div class="color-[#F74344] text-bold">
+            <div class="charge-list-money color-[#F74344] text-bold">
               <span class="text-10px">￥</span>
-              <span class="text-18px">{{record.RefundAmount}}</span>
+              <span class="text-18px">{{moneyText(record.RefundAmount)}}</span>
             </div>
-            <div class="color-[#4E5766] mt4px">挂号费:￥{{record.RegistrationFee}}，不退回</div>
+            <div class="charge-list-money-detail color-[#4E5766] mt4px">挂号费:￥{{moneyText(record.RegistrationFee)}}，不退回</div>
           </template>
           <template v-if="column.dataIndex == 'PreparStatus'">
             <a-tag :bordered="false" :color="record.PreparStatus==0?'volcano':record.PreparStatus==1?'processing':record.PreparStatus==2?'success':''">{{MYYPreparStatus.find(p=>p.id==record.PreparStatus)?.name}}</a-tag>
@@ -149,12 +151,12 @@
           
           <template v-if="column.dataIndex == 'PayChannel'">
             <div>{{ClinicPayType.find(p=>p.id==record.PayType)?.name}}</div>
-            <div class="text-bold">
+            <div class="charge-list-money text-bold">
               <span class="text-10px">￥</span>
-              <span class="text-20px">{{record.Total}}</span>
+              <span class="text-20px">{{moneyText(record.Total)}}</span>
             </div>
-            <div class="mt8px color-[#4E5766]">含药费：￥{{(record.OriginalAmount+record.RetailMarkupAmount+record.PremiumAmount).toFixed(2)}}；</div>
-            <div class="color-[#4E5766]">挂号费：￥{{record.RegistrationFee}}</div>
+            <div class="charge-list-money-detail mt8px color-[#4E5766]">含药费：￥{{moneyText(record.OriginalAmount+record.RetailMarkupAmount+record.PremiumAmount)}}；</div>
+            <div class="charge-list-money-detail color-[#4E5766]">挂号费：￥{{moneyText(record.RegistrationFee)}}</div>
           </template>
           <template v-if="column.dataIndex == 'operation'">
             <div v-if="props.chargeStatus==0">
@@ -178,6 +180,7 @@
           </template>
         </template>
       </a-table>
+      </div>
     </a-card>
 
     <PaymentModal v-model:visible="paymentVisible" :orderInfo="orderInfo" @confirm="completeOperate"></PaymentModal>
@@ -290,7 +293,17 @@
     {title: '开单时间',dataIndex: 'CreateTime',width: 160},
     {title: '应收金额',dataIndex: 'AmountReceivable',width: 180},
     {title: '操作',width: 160 ,dataIndex: 'operation',align:'center',fixed:'right'}
-  ])
+  ].map((column)=>{
+    if(column.dataIndex === 'AmountReceivable'){
+      return {
+        ...column,
+        align:'right',
+        className:'charge-list-money-column',
+        customHeaderCell: () => ({ class: 'charge-list-money-column' }),
+      }
+    }
+    return column
+  }))
     const columns2=ref([
     {title: '订单编号&调配状态',dataIndex: 'PreparStatus',width: 240},
     {title: '患者信息',dataIndex: 'PatientName',width: 180},
@@ -300,7 +313,17 @@
     {title: '订单状态',dataIndex: 'Status',width: 140},
     {title: '操作日期',dataIndex: 'OperationDate',width: 250},
     {title: '操作',width: 240 ,dataIndex: 'operation',align:'center',fixed:'right'}
-  ])
+  ].map((column)=>{
+    if(column.dataIndex === 'PayChannel'){
+      return {
+        ...column,
+        align:'right',
+        className:'charge-list-money-column',
+        customHeaderCell: () => ({ class: 'charge-list-money-column' }),
+      }
+    }
+    return column
+  }))
     const columns3=ref([
     {title: '订单编号&调配状态',dataIndex: 'PreparStatus',width: 240},
     {title: '患者信息',dataIndex: 'PatientName',width: 180},
@@ -309,7 +332,23 @@
     {title: '退款金额',dataIndex: 'RefundAmount',width: 160},
     {title: '退款时间',dataIndex: 'RefundTime',width: 160},
     {title: '操作',width: 160 ,dataIndex: 'operation',align:'center',fixed:'right'}
-  ])
+  ].map((column)=>{
+    if(column.dataIndex === 'RefundAmount'){
+      return {
+        ...column,
+        align:'right',
+        className:'charge-list-money-column',
+        customHeaderCell: () => ({ class: 'charge-list-money-column' }),
+      }
+    }
+    return column
+  }))
+
+  const tableScrollX=computed(()=>{
+    if(props.chargeStatus==0) return 1220
+    if(props.chargeStatus==1) return 1530
+    return 1240
+  })
 
   const pagination = reactive({
     total: 0,
@@ -526,6 +565,226 @@
   }
 </script>
 <style lang="less" scoped>
+.charge-list-page {
+  background: #f4f7f9;
+}
+
+.charge-list-summary-card,
+.charge-list-table-card {
+  overflow: hidden;
+  border: 1px solid #e8eef7;
+  border-radius: 12px;
+  background: #fff;
+
+  :deep(.ant-card-body) {
+    padding: 18px;
+  }
+}
+
+.charge-list-summary-grid {
+  gap: 12px;
+}
+
+.charge-list-stat-card {
+  min-height: 118px;
+  margin-left: 0 !important;
+  border: 1px solid #e8eef7;
+  background: #f9fbfd !important;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+
+  &:hover {
+    border-color: #cfe0ff;
+    box-shadow: 0 10px 26px rgba(32, 48, 75, 0.08);
+    transform: translateY(-1px);
+  }
+
+  .text-16px.text-bold {
+    color: #1d2533;
+    font-weight: 500;
+  }
+
+  .text-12px {
+    color: #5f6a7a !important;
+    font-weight: 400;
+  }
+
+  > .text-bold {
+    color: #1d2533;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  > .text-bold .text-16px {
+    color: #5f6a7a;
+    font-weight: 400;
+  }
+
+  > .text-bold .text-32px {
+    font-weight: 500;
+  }
+}
+
+.charge-list-stat-card + .charge-list-stat-card {
+  margin-left: 0 !important;
+}
+
+.charge-list-filter-panel {
+  align-items: center !important;
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid #e8eef7;
+  border-radius: 12px;
+  background: #f9fbfd;
+
+  :deep(.ant-form-item) {
+    margin-bottom: 0;
+  }
+
+  :deep(.ant-form-item-label > label) {
+    color: #5f6a7a;
+    font-weight: 400;
+  }
+}
+
+.charge-list-keyword {
+  width: 300px;
+}
+
+.charge-list-filter-select {
+  width: 220px;
+}
+
+.charge-list-filter-actions {
+  align-self: center;
+}
+
+.charge-list-action-button {
+  min-width: 88px;
+  border-radius: 8px;
+}
+
+.charge-list-table-scroll {
+  max-height: calc(100vh - 360px);
+  padding-right: 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: #cdd8ea;
+  }
+
+  &::-webkit-scrollbar-track {
+    border-radius: 999px;
+    background: #f4f7fb;
+  }
+}
+
+.charge-list-table {
+  overflow: hidden;
+  border: 1px solid #e8eef7;
+  border-radius: 12px;
+
+  :deep(.ant-table) {
+    border-radius: 12px;
+  }
+
+  :deep(.ant-table-thead > tr > th) {
+    color: #5f6a7a;
+    font-weight: 400;
+    background: #f9fbfd !important;
+    border-bottom: 1px solid #e8eef7 !important;
+  }
+
+  :deep(.ant-table-tbody > tr > td) {
+    color: #1d2533;
+    border-bottom: 1px dashed #dce6f5 !important;
+  }
+
+  :deep(.ant-table-tbody > tr.ant-table-row:hover > td) {
+    background: #eef5ff !important;
+  }
+
+  :deep(.ant-pagination) {
+    margin: 14px 4px 2px;
+  }
+}
+
+.charge-list-money {
+  color: #1d2533;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+
+  .text-18px,
+  .text-20px {
+    font-weight: 500;
+  }
+}
+
+.charge-list-money-detail {
+  font-size: 12px;
+  line-height: 20px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+:deep(.charge-list-money-column) {
+  text-align: right;
+}
+
+:deep(th.charge-list-money-column .ant-table-column-title) {
+  display: block;
+  text-align: right;
+}
+
+:deep(.charge-list-filter-panel .ant-input-affix-wrapper),
+:deep(.charge-list-filter-panel .ant-picker),
+:deep(.charge-list-filter-panel .ant-select-selector) {
+  border-color: #dce6f5 !important;
+  border-radius: 8px !important;
+  background: #fff;
+  box-shadow: none !important;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+:deep(.charge-list-filter-panel .ant-input-affix-wrapper:hover),
+:deep(.charge-list-filter-panel .ant-input-affix-wrapper-focused),
+:deep(.charge-list-filter-panel .ant-picker:hover),
+:deep(.charge-list-filter-panel .ant-picker-focused),
+:deep(.charge-list-filter-panel .ant-select:hover .ant-select-selector),
+:deep(.charge-list-filter-panel .ant-select-focused .ant-select-selector) {
+  border-color: #0a5aff !important;
+  box-shadow: 0 0 0 2px rgba(10, 90, 255, 0.08) !important;
+}
+
+:deep(.charge-list-filter-panel .ant-input-affix-wrapper .ant-input),
+:deep(.charge-list-filter-panel .ant-input-affix-wrapper .ant-input:hover),
+:deep(.charge-list-filter-panel .ant-input-affix-wrapper .ant-input:focus) {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:deep(.charge-list-select-dropdown) {
+  padding: 6px;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(29, 37, 51, 0.12);
+}
+
+:deep(.charge-list-select-dropdown .ant-select-item) {
+  min-height: 34px;
+  border-radius: 8px;
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+
+:deep(.charge-list-select-dropdown .ant-select-item-option-active:not(.ant-select-item-option-disabled)) {
+  background: #eef5ff;
+}
+
 :global(.charge-close-order-modal .ant-modal-content) {
   overflow: hidden;
   border-radius: 28px;

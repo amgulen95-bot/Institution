@@ -33,3 +33,131 @@
     border-radius: 28px !important;
     overflow: hidden;
 }
+
+.logout-confirm-modal {
+    .ant-modal-confirm {
+        .ant-modal-content {
+            border-radius: 28px !important;
+            box-shadow: 0 24px 56px rgba(31, 43, 61, 0.16);
+        }
+
+        .ant-modal-body {
+            padding: 30px 34px 28px !important;
+            background:
+                linear-gradient(180deg, #f9fbfd 0%, #ffffff 48%),
+                #ffffff;
+        }
+
+        .ant-modal-confirm-body {
+            display: block;
+            text-align: center;
+
+            > .anticon,
+            > .logout-confirm-icon {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 54px;
+                height: 54px;
+                margin: 0 auto 16px;
+                border: 1px solid #d8e6ff;
+                border-radius: 16px;
+                background: #eef5ff;
+
+                &::before {
+                    content: '';
+                    width: 22px;
+                    height: 22px;
+                    border-radius: 50%;
+                    background:
+                        linear-gradient(#ffffff, #ffffff) center 6px / 3px 9px no-repeat,
+                        radial-gradient(circle at center 17px, #ffffff 0 2px, transparent 2.5px),
+                        #0a5aff;
+                }
+            }
+        }
+
+        .ant-modal-confirm-title {
+            margin: 0;
+        }
+
+        .ant-modal-confirm-content {
+            max-width: none;
+            margin: 0;
+        }
+
+        .ant-modal-confirm-btns {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 24px;
+
+            .ant-btn {
+                min-width: 112px;
+                height: 38px;
+                margin: 0;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 400;
+            }
+
+            .ant-btn-default {
+                color: #4e5766;
+                border-color: #dce6f5;
+                background: #ffffff;
+
+                &:hover,
+                &:focus {
+                    color: #0a5aff;
+                    border-color: #d8e6ff;
+                    background: #eef5ff;
+                }
+            }
+
+            .ant-btn-primary {
+                border-color: #0a5aff;
+                background: #0a5aff;
+
+                &:hover,
+                &:focus {
+                    border-color: #0848cc;
+                    background: #0848cc;
+                    box-shadow: 0 8px 18px rgba(10, 90, 255, 0.18);
+                }
+            }
+        }
+    }
+
+    .logout-confirm-title {
+        color: #1d2533;
+        font-size: 20px;
+        font-weight: 500;
+        line-height: 28px;
+    }
+
+    .logout-confirm-content {
+        margin-top: 10px;
+        padding-top: 14px;
+        border-top: 1px dashed #dce6f5;
+    }
+
+    .logout-confirm-message {
+        margin: 0;
+        color: #5f6a7a;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 22px;
+    }
+
+    .logout-confirm-tip {
+        margin-top: 12px;
+        padding: 11px 14px;
+        color: #5f6a7a;
+        font-size: 13px;
+        font-weight: 400;
+        line-height: 20px;
+        border: 1px solid #e8eef7;
+        border-radius: 12px;
+        background: #f9fbfd;
+    }
+}
