@@ -260,9 +260,13 @@
           <a-form-item name="Diagnosis">
             <a-popover placement="bottomLeft" v-model:open="diagnosisPopover.visible" trigger="click">
               <template #content>
-                <div class="w400px" @mousedown.prevent @mouseleave="diagnosisPopover.visible=false">
-                  <div class="max-h300px overflow-y-auto" v-if="diagnosisPopover.list.length">
-                    <div class="medical-option-item pointer p4px hover-bg-[#e1ebff]" v-for="(item,index) in diagnosisPopover.list" :key="index" @click="handleDiagnosisSelect(item)">{{ item }}</div>
+                <div class="medical-diagnosis-popover-panel" @mousedown.prevent @mouseleave="diagnosisPopover.visible=false">
+                  <div class="medical-diagnosis-list" v-if="diagnosisPopover.list.length">
+                    <div class="medical-option-item medical-diagnosis-option pointer" v-for="(item,index) in diagnosisPopover.list" :key="index" @click="handleDiagnosisSelect(item)">
+                      <span class="medical-diagnosis-option__main" :title="getDiagnosisOptionName(item)">{{ getDiagnosisOptionName(item) }}</span>
+                      <span class="medical-diagnosis-option__assist" :title="getDiagnosisOptionAssist(item, 1) || '--'">{{ getDiagnosisOptionAssist(item, 1) || '--' }}</span>
+                      <span class="medical-diagnosis-option__assist" :title="getDiagnosisOptionAssist(item, 2) || '--'">{{ getDiagnosisOptionAssist(item, 2) || '--' }}</span>
+                    </div>
                   </div>
                   <div v-else-if="diagnosisPopover.searchKey && !diagnosisPopover.loading" class="text-center text-gray">无匹配结果</div>
                   <div v-else-if="diagnosisPopover.loading" class="text-center text-gray">搜索中...</div>
@@ -439,23 +443,21 @@
   const diagnosisPopover=ref({
     visible:false,
     searchKey:'',
-    list:[] as string[],
+    list:[] as any[],
     loading:false,
   })
   let diagnosisSearchTimer: any
+  let diagnosisSearchSeq = 0
+  const DIAGNOSIS_RESULT_LIMIT = 80
   const visitForm = ref(cloneDeep(props.visitForm))
   watch(() => props.visitForm, (newVal) => {
     visitForm.value = cloneDeep(newVal)
   }, { deep: true })
 
   watch(() => diagnosisPopover.value.visible, (val) => {
-    if (val && !diagnosisPopover.value.searchKey) {
-      diagnosisPopover.value.loading = true
-      DiagnosisSearch({}).then((data: any) => {
-        diagnosisPopover.value.list = (data || []).map((item: any) => item.Name || item.name || item)
-      }).finally(() => {
-        diagnosisPopover.value.loading = false
-      })
+    if (!val) {
+      if (diagnosisSearchTimer) clearTimeout(diagnosisSearchTimer)
+      diagnosisPopover.value.loading = false
     }
   })
   watch(() => quickPanel.value.ChiefComplaint.visible, (val) => {
@@ -715,19 +717,52 @@
     if (diagnosisSearchTimer) clearTimeout(diagnosisSearchTimer)
     if (!key) {
       diagnosisPopover.value.list = []
+      diagnosisPopover.value.loading = false
+      diagnosisSearchSeq += 1
       return
     }
     diagnosisSearchTimer = setTimeout(() => {
+      const requestSeq = ++diagnosisSearchSeq
       diagnosisPopover.value.loading = true
-      DiagnosisSearch({ name: key }).then((data: any) => {
-        diagnosisPopover.value.list = (data || []).map((item: any) => item.Name || item.name || item)
+      DiagnosisSearch({ name: key, keyword: key, limit: DIAGNOSIS_RESULT_LIMIT, pageSize: DIAGNOSIS_RESULT_LIMIT }, 'none').then((data: any) => {
+        if (requestSeq !== diagnosisSearchSeq) return
+        diagnosisPopover.value.list = normalizeDiagnosisList(data)
       }).finally(() => {
-        diagnosisPopover.value.loading = false
+        if (requestSeq === diagnosisSearchSeq) {
+          diagnosisPopover.value.loading = false
+        }
       })
-    }, 300)
+    }, 260)
   }
 
-  const handleDiagnosisSelect = (value: string) => {
+  const normalizeDiagnosisList = (data: any) => {
+    const rows = Array.isArray(data) ? data : (data?.Rows || data?.rows || data?.List || data?.list || data?.Data || data?.data || [])
+    return Array.isArray(rows) ? rows.slice(0, DIAGNOSIS_RESULT_LIMIT) : []
+  }
+
+  const splitDiagnosisText = (value: string) => String(value || '').split(/[|｜/／,，\s]+/).map((item) => item.trim()).filter(Boolean)
+  const getDiagnosisOptionName = (item: any) => {
+    if (typeof item === 'string') {
+      return splitDiagnosisText(item)[0] || item
+    }
+    return item?.Name || item?.name || item?.DiagnosisName || item?.diagnosisName || item?.Title || item?.title || item?.DiseaseName || item?.diseaseName || ''
+  }
+  const getDiagnosisOptionAssist = (item: any, column: 1 | 2) => {
+    if (typeof item === 'string') {
+      return splitDiagnosisText(item)[column] || ''
+    }
+    const fields = column === 1
+      ? ['Code', 'code', 'ICDCode', 'icdCode', 'DiseaseCode', 'diseaseCode', 'CategoryName', 'categoryName', 'TypeName', 'typeName', 'ClassName', 'className']
+      : ['Remark', 'remark', 'Description', 'description', 'Desc', 'desc', 'Alias', 'alias', 'Pinyin', 'pinyin', 'DepartmentName', 'departmentName']
+    for (const field of fields) {
+      if (item?.[field]) return item[field]
+    }
+    return ''
+  }
+
+  const handleDiagnosisSelect = (item: any) => {
+    const value = getDiagnosisOptionName(item)
+    if (!value) return
     const current = visitForm.value.Diagnosis || ''
     const parts = current.split(/[,，]/)
     parts[parts.length - 1] = value
@@ -844,6 +879,25 @@
   font-weight: 400 !important;
   color: #000000 !important;
 }
+.medical-diagnosis-popover-panel {
+  width: 760px;
+}
+.medical-diagnosis-list {
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.medical-diagnosis-list::-webkit-scrollbar {
+  width: 8px;
+}
+.medical-diagnosis-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #CDD8EA;
+}
+.medical-diagnosis-list::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: #F4F7FB;
+}
 .medical-option-item {
   border-radius: 4px;
   padding: 7px 8px !important;
@@ -852,6 +906,34 @@
   font-weight: 400;
   line-height: 22px;
   border-bottom: 1px dashed #E8EEF7;
+}
+.medical-diagnosis-option {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.35fr) minmax(170px, 0.95fr) minmax(220px, 1.15fr);
+  align-items: center;
+  gap: 16px;
+  min-height: 52px;
+  padding: 12px 14px !important;
+  transition: background-color 0.16s ease, box-shadow 0.16s ease;
+}
+.medical-diagnosis-option:hover {
+  background: #EEF5FF;
+  box-shadow: inset 0 0 0 1px #D8E6FF;
+}
+.medical-diagnosis-option span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.medical-diagnosis-option__main {
+  color: #000000;
+  font-weight: 400;
+}
+.medical-diagnosis-option__assist {
+  color: #5F6A7A;
+  font-size: 13px;
+  font-weight: 400;
 }
 .medical-option-item:last-child {
   border-bottom: none;

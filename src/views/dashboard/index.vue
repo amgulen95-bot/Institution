@@ -2,7 +2,70 @@
   <div class="p-4 home" v-loading="loading">
     <div class="dashboard-prescription-layout flex justify-between" style="height: calc(100vh - 192px);">
       <a-card class="dashboard-side-panel dashboard-card-radius h-100% overflow-hidden w-380px">
-        <div class="text-18px text-bold">今日接诊</div>
+        <div class="today-visit-title-row">
+          <div class="text-18px text-bold">今日接诊</div>
+          <a-popover
+            v-model:open="todayVisitDatePickerOpen"
+            trigger="click"
+            placement="bottomLeft"
+            overlayClassName="today-visit-date-popover"
+          >
+            <template #content>
+              <a-calendar
+                class="today-visit-calendar"
+                v-model:value="todayVisitDateValue"
+                :fullscreen="false"
+                :disabledDate="disabledTodayVisitDate"
+                @select="handleTodayVisitDateChange"
+              >
+                <template #dateFullCellRender="{ current }">
+                  <div
+                    class="today-visit-calendar-date-cell"
+                    :class="{
+                      'is-today': isTodayVisitCalendarToday(current),
+                      'is-selected': isTodayVisitCalendarSelected(current),
+                    }"
+                  >
+                    <span v-if="isTodayVisitCalendarToday(current)" class="today-visit-calendar-date-today">今</span>
+                    <span v-else class="today-visit-calendar-date-number">{{ current.date() }}</span>
+                  </div>
+                </template>
+                <template #headerRender="{ value, onChange }">
+                  <div class="today-visit-calendar-header">
+                    <button
+                      class="today-visit-calendar-page-btn"
+                      type="button"
+                      aria-label="上一个月"
+                      @click.stop="handleTodayVisitCalendarPage(value, onChange, -1)"
+                    >
+                      <LeftOutlined />
+                    </button>
+                    <span class="today-visit-calendar-title">{{ formatTodayVisitCalendarMonth(value) }}</span>
+                    <button
+                      class="today-visit-calendar-page-btn"
+                      :class="{ 'is-disabled': isTodayVisitCalendarNextDisabled(value) }"
+                      type="button"
+                      aria-label="下一个月"
+                      :disabled="isTodayVisitCalendarNextDisabled(value)"
+                      @click.stop="handleTodayVisitCalendarPage(value, onChange, 1)"
+                    >
+                      <RightOutlined />
+                    </button>
+                  </div>
+                </template>
+              </a-calendar>
+            </template>
+            <button
+              class="today-visit-date-trigger"
+              :class="{ 'is-open': todayVisitDatePickerOpen }"
+              type="button"
+              aria-label="选择接诊日期"
+            >
+              <RightOutlined />
+            </button>
+          </a-popover>
+          <span v-if="!isDefaultTodayVisitDate" class="today-visit-selected-date">{{ selectedTodayVisitDate }}</span>
+        </div>
         <div class="flex align-center mt16px mb12px">
           <a-input-search v-model:value="todayVisit.searchParams.keyword" placeholder="搜索患者姓名、手机号" @search="handleTabChange" />
           <a-button class="ml12px dashboard-system-radius-btn" type="primary" @click="handleQuick">
@@ -11,8 +74,8 @@
           </a-button>
         </div>
         <a-tabs class="today-visit-tabs" v-model:activeKey="todayVisit.searchParams.status" @change="handleTabChange">
-          <a-tab-pane :key="null" tab="全部"></a-tab-pane>
-          <a-tab-pane :key="1" tab="就诊中"></a-tab-pane>
+          <a-tab-pane :key="null" tab="全部" :disabled="!isDefaultTodayVisitDate"></a-tab-pane>
+          <a-tab-pane :key="1" tab="就诊中" :disabled="!isDefaultTodayVisitDate"></a-tab-pane>
           <a-tab-pane :key="2" tab="已完成"></a-tab-pane>
         </a-tabs>
         <div ref="todayVisitListRef" class="overflow-y-scroll scrollbar-none today-visit-content-panel" :class="{ 'today-visit-content-switching': todayVisitSwitching }" style="height: calc(100% - 142px);">
@@ -429,13 +492,14 @@
   import { useMessage } from '/@/hooks/web/useMessage';
   import { Modal } from 'ant-design-vue';
   import { useUserStore } from '@/store/modules/user';
-  import {PlusOutlined,ClockCircleOutlined,RightOutlined,CloseOutlined,CheckCircleFilled,DeleteOutlined} from '@ant-design/icons-vue';
+  import {PlusOutlined,ClockCircleOutlined,LeftOutlined,RightOutlined,CloseOutlined,CheckCircleFilled,DeleteOutlined} from '@ant-design/icons-vue';
   import {PrescriptApiCtrl} from '/@/api/myy/prescript';
   import {PatientApiCtrl} from '/@/api/myy/patient';
   import {OrderApiCtrl} from '/@/api/myy/order';
   import {SettingApiCtrl} from '/@/api/myy/setting';
   import { useGo } from '/@/hooks/web/usePage';
   import { cloneDeep } from 'lodash-es';
+  import { dateUtil, formatToDate } from '/@/utils/dateUtil';
   import {basicEnum} from '/@/api/platform/common';
   import AddPatient from '/@/components/AddPatient.vue';
   import ConfirmPayment from '/@/components/ConfirmPayment.vue';
@@ -456,6 +520,11 @@
   const todayVisitListRef=ref<HTMLElement | null>(null)
   const todayVisitSwitching=ref(false)
   const todayVisitDetailSwitching=ref(false)
+  const todayVisitDatePickerOpen=ref(false)
+  const todayVisitDateValue=ref(dateUtil())
+  const selectedTodayVisitDate=ref(formatToDate(new Date()))
+  const isDefaultTodayVisitDate=computed(()=>selectedTodayVisitDate.value===formatToDate(new Date()))
+  const todayVisitCalendarPaging=ref(false)
   const hasMounted=ref(false)
   const addPatientVisible=ref(false)
   const prescriptionRef=ref()
@@ -503,6 +572,7 @@
     loading:false,
     info:{},
   })
+  const receiptSubmitOpening=ref(false)
   const orderPayCountdown=ref({
     visible:false,
     orderCode:'',
@@ -602,6 +672,7 @@
       page:1,
       limit:20,
       docId:userStore.getUserInfo.Doctor.DoctorId,
+      VisitDate:'',
     },
     list:[],
     hasNextPage: false,
@@ -620,8 +691,70 @@
     await waitFrame()
     await waitMs(190)
   }
+
+  const syncTodayVisitDateParam=()=>{
+    todayVisit.value.searchParams.VisitDate=isDefaultTodayVisitDate.value?'':selectedTodayVisitDate.value
+  }
+
+  const resetTodayVisitDateToDefault=()=>{
+    todayVisitDateValue.value=dateUtil()
+    selectedTodayVisitDate.value=formatToDate(new Date())
+    syncTodayVisitDateParam()
+  }
+
+  const disabledTodayVisitDate=(current)=>{
+    return current && current.isAfter(dateUtil(), 'day')
+  }
+
+  const isTodayVisitCalendarToday=(current)=>{
+    return current && dateUtil(current).isSame(dateUtil(), 'day')
+  }
+
+  const isTodayVisitCalendarSelected=(current)=>{
+    return current && formatToDate(current)===selectedTodayVisitDate.value
+  }
+
+  const formatTodayVisitCalendarMonth=(value)=>{
+    return dateUtil(value || todayVisitDateValue.value).format('YYYY年MM月')
+  }
+
+  const isTodayVisitCalendarNextDisabled=(value)=>{
+    const currentPanelDate = dateUtil(value || todayVisitDateValue.value)
+    return currentPanelDate.isSame(dateUtil(), 'month') || currentPanelDate.isAfter(dateUtil(), 'month')
+  }
+
+  const handleTodayVisitCalendarPage=(value,onChange,direction)=>{
+    const currentPanelDate = dateUtil(value || todayVisitDateValue.value)
+    const nextPanelDate = currentPanelDate.add(direction, 'month')
+    if(direction>0 && nextPanelDate.isAfter(dateUtil(), 'month')){
+      return
+    }
+    todayVisitCalendarPaging.value=true
+    todayVisitDateValue.value=nextPanelDate
+    onChange?.(nextPanelDate)
+    nextTick(() => {
+      window.setTimeout(() => {
+        todayVisitCalendarPaging.value=false
+      }, 80)
+    })
+  }
+
+  const handleTodayVisitDateChange=async (date)=>{
+    if(todayVisitCalendarPaging.value){
+      return
+    }
+    const nextDate = date ? formatToDate(date) : formatToDate(new Date())
+    selectedTodayVisitDate.value=nextDate
+    todayVisitDateValue.value=dateUtil(nextDate)
+    syncTodayVisitDateParam()
+    todayVisit.value.searchParams.status=isDefaultTodayVisitDate.value?null:2
+    todayVisitDatePickerOpen.value=false
+    await handleTabChange()
+  }
+
   onMounted(()=>{
     getBasicEnum()
+    resetTodayVisitDateToDefault()
     resetTodayVisitToAllFirst()
     getSettingDetail()
     nextTick(() => {
@@ -630,7 +763,7 @@
   })
 
   onActivated(()=>{
-    if (hasMounted.value) {
+    if (hasMounted.value && !receiptSubmitOpening.value && !receiptModal.value.visible) {
       resetTodayVisitToAllFirst()
     }
   })
@@ -666,6 +799,9 @@
   }
 
   const resetTodayVisitToAllFirst=async ()=>{
+    if(receiptSubmitOpening.value || receiptModal.value.visible){
+      return
+    }
     const switchKey = ++todayVisitSwitchKey
     todayVisitSwitching.value = true
     await waitTodayVisitSwitchHidden()
@@ -691,6 +827,7 @@
 
   // 快速接诊
   const handleQuick=async ()=>{
+    resetTodayVisitDateToDefault()
     saveCurrentDraft()
     todayVisit.value.searchParams.status=null
     todayVisit.value.searchParams.page=1
@@ -795,8 +932,95 @@
   }
   
   // 获取今日接诊列表
+  const isSameSelectedVisitDate=(record)=>{
+    const dateText = String(record?.CreateTime || record?.VisitTime || record?.VisitDate || record?.LastVisitTime || '')
+    return dateText.startsWith(selectedTodayVisitDate.value)
+  }
+
+  const isCompletedVisitRecord=(record)=>{
+    const status = record?.VisitStatus ?? record?.Status ?? record?.Visit?.VisitStatus
+    const statusName = String(record?.VisitStatusName || record?.StatusName || record?.Visit?.VisitStatusName || '')
+    if(status === undefined || status === null || status === ''){
+      return true
+    }
+    return Number(status) === 2 || statusName.includes('已完成')
+  }
+
+  const normalizeHistoricalVisitRecord=(record)=>{
+    return {
+      ...record,
+      Id: record?.Id || record?.VisitId || record?.VisitID,
+      PatientId: record?.PatientId || record?.PatientID || record?.Patient?.PatientId || record?.Patient?.Id,
+      PatientName: record?.PatientName || record?.Patient?.Name || record?.Name,
+      PatientGender: record?.PatientGender ?? record?.Patient?.Gender,
+      PatientAge: record?.PatientAge ?? record?.Patient?.Age,
+      PatientPhone: record?.PatientPhone || record?.Patient?.Phone || record?.Phone,
+      VisitStatus: 2,
+      CreateTime: record?.CreateTime || record?.VisitTime || record?.VisitDate || `${selectedTodayVisitDate.value} 00:00:00`,
+    }
+  }
+
+  const getHistoricalCompletedVisitList=(isLoadMore, requestOptions)=>{
+    if(requestOptions.showLoading){
+      loading.value=true
+    }
+    const query = {
+      page: todayVisit.value.searchParams.page,
+      limit: todayVisit.value.searchParams.limit,
+      keyword: todayVisit.value.searchParams.keyword,
+      docId: todayVisit.value.searchParams.docId,
+      hasOrder: true,
+      status: 2,
+      visitStatus: 2,
+      VisitStatus: 2,
+      startTime: `${selectedTodayVisitDate.value} 00:00:00`,
+      endTime: `${selectedTodayVisitDate.value} 23:59:59`,
+      visitStartTime: `${selectedTodayVisitDate.value} 00:00:00`,
+      visitEndTime: `${selectedTodayVisitDate.value} 23:59:59`,
+      createStartTime: `${selectedTodayVisitDate.value} 00:00:00`,
+      createEndTime: `${selectedTodayVisitDate.value} 23:59:59`,
+      date: selectedTodayVisitDate.value,
+      VisitDate: selectedTodayVisitDate.value,
+    }
+    return PatientApiCtrl.VisitList(query).then(data=>{
+      const rows = (data?.Rows || [])
+        .filter((item)=>isSameSelectedVisitDate(item))
+        .filter((item)=>isCompletedVisitRecord(item))
+        .map((item)=>normalizeHistoricalVisitRecord(item))
+      if (isLoadMore) {
+        todayVisit.value.list = [...todayVisit.value.list, ...rows]
+      } else {
+        todayVisit.value.list = rows
+      }
+      todayVisit.value.hasNextPage = Boolean(data?.HasNextPage)
+      if(todayVisit.value.list.length && requestOptions.autoSelect){
+        visitInfo.value.index=0
+        visitInfo.value.Id=todayVisit.value.list[0].Id
+        if(visitInfo.value.Id){
+          return visitDetail(false).then(() => data)
+        }
+      }else if(!todayVisit.value.list.length && requestOptions.autoSelect){
+        InitializeAll()
+        todayVisit.value.searchParams.status=2
+        syncTodayVisitDateParam()
+      }
+      return data
+    }).catch(() => null).finally(() => {
+      if(requestOptions.showLoading){
+        loading.value=false
+      }
+    })
+  }
+
   const getTodayVisitList=(isLoadMore = false, options: { autoSelect?: boolean; showLoading?: boolean; preserveCompletedDetail?: boolean } = {})=>{
+    if(!isDefaultTodayVisitDate.value){
+      todayVisit.value.searchParams.status=2
+      syncTodayVisitDateParam()
+    }
     const requestOptions = { autoSelect: true, showLoading: true, ...options }
+    if(!isDefaultTodayVisitDate.value){
+      return getHistoricalCompletedVisitList(isLoadMore, requestOptions)
+    }
     if(requestOptions.showLoading){
       loading.value=true
     }
@@ -808,7 +1032,7 @@
       }
       todayVisit.value.hasNextPage = data.HasNextPage;
 
-      if(todayVisit.value.searchParams.status!=2&&localStorage.getItem('DraftPatientList')){
+      if(todayVisit.value.searchParams.status!=2&&isDefaultTodayVisitDate.value&&localStorage.getItem('DraftPatientList')){
         let storedList=localStorage.getItem('DraftPatientList')
         let draftList=JSON.parse(storedList)
         if(draftList.length){
@@ -1063,6 +1287,10 @@
   }
 
   const handleTabChange = async () => {
+    if(!isDefaultTodayVisitDate.value){
+      todayVisit.value.searchParams.status=2
+      syncTodayVisitDateParam()
+    }
     const switchKey = ++todayVisitSwitchKey
     const shouldTryPreserveCompletedDetail =
       todayVisit.value.searchParams.status !== 1 &&
@@ -1280,7 +1508,9 @@
       centered:true,
       content: '当前患者信息尚未加入就诊中列表，是否确认添加患者信息并进行快速接诊？',
       onOk() {
-        addManualPatientToTodayVisit()
+        if(type!==3){
+          addManualPatientToTodayVisit()
+        }
         return createOrder(type, { skipManualQuickConfirm: true })
       },
       onCancel() {
@@ -1290,6 +1520,19 @@
   }
 
   // 保存患者
+  const openReceiptInfoModal=async()=>{
+    receiptSubmitOpening.value=true
+    todayVisitSwitching.value=false
+    todayVisitDetailSwitching.value=false
+    patientModal.value.visible=false
+    await nextTick()
+    await waitFrame()
+    receiptModal.value.visible=true
+    await nextTick()
+    await waitFrame()
+    receiptSubmitOpening.value=false
+  }
+
   const createOrder = async (type, options = { skipManualQuickConfirm: false }) => {  //1暂存处方 2保存患者病历 3提交审方/开方发药
     saveType.value=type
     normalizePatientAge()
@@ -1312,6 +1555,12 @@
       confirmManualQuickVisit(type)
       return
     }
+    if(type==3){
+      receiptSubmitOpening.value=true
+      todayVisitSwitching.value=false
+      todayVisitDetailSwitching.value=false
+      patientModal.value.visible=false
+    }
     const medicalIsValid = await medicalRef.value?.handleSaveMedical()  //验证病历
     if(medicalIsValid){
       if(type==2){
@@ -1319,9 +1568,17 @@
       }else{
         const isValid = await prescriptionRef.value?.savePrescript();  //验证处方
         if (isValid) {
+          if(type==3){
+            await openReceiptInfoModal()
+            return
+          }
           QuickSavePatient()
+        }else if(type==3){
+          receiptSubmitOpening.value=false
         }
       }
+    }else if(type==3){
+      receiptSubmitOpening.value=false
     }
   }
 
@@ -1446,8 +1703,42 @@
   }
 
   // 创建机构订单
-  const handleCreateOrder=()=>{
+  const persistVisitForOrder=async()=>{
+    if(!patientModal.value.form.Id){
+      const formData=cloneDeep(patientModal.value.form)
+      const patientData=await PrescriptApiCtrl.SavePatient(formData)
+      patientModal.value.form.Id=patientData.Id
+    }
+    if(!visitInfo.value.Id){
+      const savedIndex = visitInfo.value.index
+      const visitData=await PrescriptApiCtrl.QuickVisit({
+        PatientId:patientModal.value.form.Id,
+        VisitType:visitOtherForm.value.VisitType,
+        RegistrationFee:visitOtherForm.value.RegistrationFee,
+      })
+      visitInfo.value=visitData
+      visitInfo.value.index = savedIndex
+      visitInfo.value.detail=visitInfo.value.detail||{}
+    }
+    let medicalInfo=cloneDeep(visitForm.value)
+    await PrescriptApiCtrl.SaveVisit({
+      Id:visitInfo.value.Id,
+      VisitType:visitOtherForm.value.VisitType,
+      RegistrationFee:visitOtherForm.value.RegistrationFee,
+      ...medicalInfo,
+    })
+  }
+
+  const handleCreateOrder=async()=>{
     loading.value=true
+    if(saveType.value==3){
+      try {
+        await persistVisitForOrder()
+      } catch (error) {
+        loading.value=false
+        return
+      }
+    }
     const finishedVisitId = visitInfo.value.Id
     const finishedPatientId = patientModal.value.form.Id
     let materialList=prescriptionList.value.map(item => {
@@ -2210,6 +2501,181 @@
     background: #F9FBFD;
     box-shadow: 0 0 0 2px fade(@primary-color, 8%), 0 4px 10px rgba(32, 48, 75, 0.05);
   }
+}
+.today-visit-title-row {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+}
+.today-visit-date-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-left: 8px;
+  padding: 0;
+  color: #063B9F;
+  border: 1px solid #C7D8F8;
+  border-radius: 50%;
+  background: #F9FBFD;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+
+  :deep(.anticon) {
+    font-size: 12px;
+    transition: transform 0.2s ease;
+  }
+
+  &:hover,
+  &:focus {
+    color: #063B9F;
+    border-color: #0A5AFF;
+    background: #EEF5FF;
+    box-shadow: 0 0 0 2px fade(@primary-color, 10%);
+    outline: none;
+  }
+
+  &.is-open {
+    background: #EEF5FF;
+
+    :deep(.anticon) {
+      transform: rotate(90deg);
+    }
+  }
+}
+.today-visit-selected-date {
+  margin-left: 8px;
+  color: #858D98;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+}
+:global(.today-visit-date-popover .ant-popover-inner) {
+  border: 1px solid #E8EEF7;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 16px 36px rgba(31, 43, 61, 0.14);
+}
+:global(.today-visit-date-popover .ant-popover-inner-content) {
+  padding: 0;
+}
+:global(.today-visit-date-popover .today-visit-calendar) {
+  width: 292px;
+  padding: 10px 12px 12px;
+  background: #FFFFFF;
+}
+:global(.today-visit-date-popover .ant-picker-calendar-header) {
+  padding: 4px 0 10px;
+  border-bottom: 1px dashed #DCE6F5;
+}
+:global(.today-visit-date-popover .today-visit-calendar-header) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+:global(.today-visit-date-popover .today-visit-calendar-title) {
+  color: #1F2937;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 30px;
+}
+:global(.today-visit-date-popover .today-visit-calendar-page-btn) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: #4E5766;
+  border: 1px solid #DCE6F5;
+  border-radius: 8px;
+  background: #F9FBFD;
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+:global(.today-visit-date-popover .today-visit-calendar-page-btn:hover:not(:disabled)) {
+  color: #0A5AFF;
+  border-color: #BFD4FF;
+  background: #EEF5FF;
+}
+:global(.today-visit-date-popover .today-visit-calendar-page-btn:disabled),
+:global(.today-visit-date-popover .today-visit-calendar-page-btn.is-disabled) {
+  color: #C4CAD4;
+  border-color: #E8EEF7;
+  background: #F9FBFD;
+  cursor: not-allowed;
+}
+:global(.today-visit-date-popover .ant-picker-calendar-header .ant-select-selector) {
+  height: 30px !important;
+  border-color: #DCE6F5 !important;
+  border-radius: 8px !important;
+  background: #F9FBFD !important;
+  box-shadow: none !important;
+}
+:global(.today-visit-date-popover .ant-picker-panel) {
+  border-top: 0;
+}
+:global(.today-visit-date-popover .ant-picker-content th) {
+  height: 30px;
+  color: #5F6A7A;
+  font-weight: 400;
+}
+:global(.today-visit-date-popover .ant-picker-cell) {
+  padding: 3px 0;
+}
+:global(.today-visit-date-popover .today-visit-calendar-date-cell) {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  color: #263447;
+  border-radius: 8px;
+  transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+:global(.today-visit-date-popover .today-visit-calendar-date-cell.is-today) {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  color: #0A5AFF;
+  background: #EEF5FF;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px #D8E6FF;
+}
+:global(.today-visit-date-popover .today-visit-calendar-date-cell.is-selected) {
+  color: #FFFFFF;
+  background: #0A5AFF;
+  box-shadow: none;
+}
+:global(.today-visit-date-popover .today-visit-calendar-date-cell.is-today.is-selected) {
+  color: #FFFFFF;
+  background: #0A5AFF;
+}
+:global(.today-visit-date-popover .today-visit-calendar-date-number) {
+  line-height: 18px;
+}
+:global(.today-visit-date-popover .today-visit-calendar-date-today) {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 32px;
+}
+:global(.today-visit-date-popover .ant-picker-cell .ant-picker-cell-inner) {
+  border-radius: 8px;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+:global(.today-visit-date-popover .ant-picker-cell-in-view.ant-picker-cell-selected .ant-picker-cell-inner),
+:global(.today-visit-date-popover .ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before) {
+  border-color: #0A5AFF;
+}
+:global(.today-visit-date-popover .ant-picker-cell-in-view.ant-picker-cell-selected .ant-picker-cell-inner) {
+  background: transparent;
+}
+:global(.today-visit-date-popover .ant-picker-cell-in-view:not(.ant-picker-cell-selected) .ant-picker-cell-inner:hover) {
+  background: #EEF5FF;
+  color: #063B9F;
 }
 .today-visit-tabs {
   :deep(.ant-tabs-nav-list) {

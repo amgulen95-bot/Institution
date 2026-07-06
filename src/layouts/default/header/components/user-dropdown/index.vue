@@ -526,8 +526,22 @@
     &__bar {
       display: flex;
       align-items: center;
+      justify-content: flex-end;
+      width: 300px;
+      min-width: 300px;
+      flex: 0 0 300px;
       height: @header-height;
       gap: 8px;
+    }
+
+    &__bar > &__shell {
+      width: 212px;
+      min-width: 212px;
+      flex: 0 0 212px;
+    }
+
+    &__bar > &__shell > & {
+      width: 100%;
     }
 
     &__service-btn {
@@ -535,6 +549,8 @@
       align-items: center;
       justify-content: center;
       width: 36px;
+      min-width: 36px;
+      flex: 0 0 36px;
       height: 34px;
       padding: 0;
       color: #0a5aff;

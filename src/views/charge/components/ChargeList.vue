@@ -159,12 +159,11 @@
             <div class="charge-list-money-detail color-[#4E5766]">挂号费：￥{{moneyText(record.RegistrationFee)}}</div>
           </template>
           <template v-if="column.dataIndex == 'operation'">
-            <div v-if="props.chargeStatus==0">
-              <a-button type="primary" @click="operateOrder(record,1)">去收款</a-button>
-              <div class="mt8px">
-                <a-button type="link" size="small" @click="seeDetail(record)">详情</a-button>
-                <a-divider type="vertical" />
-                <a-button type="text" size="small" @click="handleCloseOrder(record)">关闭</a-button>
+            <div v-if="props.chargeStatus==0" class="charge-list-pending-actions">
+              <a-button class="charge-list-pay-button" type="primary" @click="operateOrder(record,1)">去收款</a-button>
+              <div class="charge-list-pending-secondary">
+                <a-button class="charge-list-detail-button" size="small" @click="seeDetail(record)">详情</a-button>
+                <a-button class="charge-list-close-button" size="small" @click="handleCloseOrder(record)">关闭</a-button>
               </div>
             </div>
             <div v-if="props.chargeStatus==1">
@@ -730,6 +729,66 @@
   line-height: 20px;
   text-align: right;
   white-space: nowrap;
+}
+
+.charge-list-pending-actions {
+  display: inline-flex;
+  width: 116px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.charge-list-pay-button {
+  width: 100%;
+  height: 34px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 400;
+  box-shadow: 0 6px 14px rgba(10, 90, 255, 0.14);
+}
+
+.charge-list-pending-secondary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.charge-list-detail-button,
+.charge-list-close-button {
+  height: 28px;
+  padding: 0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 400;
+  background: #fff;
+  transition: border-color 0.18s ease, color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.charge-list-detail-button {
+  border-color: #dce6f5;
+  color: #0a5aff;
+
+  &:hover,
+  &:focus {
+    border-color: #cfe0ff;
+    color: #0a5aff;
+    background: #eef5ff;
+    box-shadow: 0 0 0 2px rgba(10, 90, 255, 0.06);
+  }
+}
+
+.charge-list-close-button {
+  border-color: #eadfe0;
+  color: #8a4b4b;
+
+  &:hover,
+  &:focus {
+    border-color: #f1c8c8;
+    color: #d84a4a;
+    background: #fff5f5;
+    box-shadow: 0 0 0 2px rgba(216, 74, 74, 0.06);
+  }
 }
 
 :deep(.charge-list-money-column) {

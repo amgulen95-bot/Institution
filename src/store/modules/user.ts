@@ -228,16 +228,22 @@ export const useUserStore = defineStore({
       const { t } = useI18n();
       createConfirm({
         iconType: 'warning',
-        icon: () => h('span', { class: 'logout-confirm-icon' }),
+        icon: () =>
+          h('span', { class: 'logout-confirm-icon' }, [
+            h('span', { class: 'logout-confirm-icon-core' }),
+          ]),
         wrapClassName: 'logout-confirm-modal',
-        width: 460,
+        width: 500,
         okText: '确认退出',
         cancelText: '继续使用',
         title: () => h('div', { class: 'logout-confirm-title' }, t('sys.app.logoutTip')),
         content: () =>
           h('div', { class: 'logout-confirm-content' }, [
             h('p', { class: 'logout-confirm-message' }, t('sys.app.logoutMessage')),
-            h('div', { class: 'logout-confirm-tip' }, '退出后将返回登录页，再次使用需要重新登录。'),
+            h('div', { class: 'logout-confirm-tip' }, [
+              h('span', { class: 'logout-confirm-tip-label' }, '退出后'),
+              h('span', { class: 'logout-confirm-tip-text' }, '将返回登录页，再次使用需要重新登录。'),
+            ]),
           ]),
         onOk: async () => {
           await this.logout(true);

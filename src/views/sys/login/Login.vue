@@ -143,9 +143,12 @@
           <button type="button" :class="{ active: loginType === 'sms' }" @click="loginType = 'sms'">
             验证码登录
           </button>
+          <button type="button" :class="{ active: loginType === 'wechat' }" @click="loginType = 'wechat'">
+            微信扫码
+          </button>
         </div>
 
-        <a-form class="login-form" :model="loginForm" layout="vertical" @keypress.enter="toLogin">
+        <a-form v-if="loginType !== 'wechat'" class="login-form" :model="loginForm" layout="vertical" @keypress.enter="toLogin">
           <a-form-item label="手机号码">
             <a-input
               v-model:value="loginForm.phone"
@@ -189,7 +192,22 @@
           </a-form-item>
         </a-form>
 
-        <div class="login-options">
+        <div v-else class="login-wechat-panel">
+          <div class="login-wechat-qr">
+            <div class="login-wechat-qr__grid" aria-hidden="true"></div>
+            <WechatOutlined class="login-wechat-qr__icon" />
+          </div>
+          <div class="login-wechat-copy">
+            <strong>微信扫码登录</strong>
+            <span>请使用绑定机构账号的微信扫码确认登录</span>
+          </div>
+          <div class="login-wechat-status">
+            <span></span>
+            <em>等待扫码，接口接入后将自动刷新二维码状态</em>
+          </div>
+        </div>
+
+        <div v-if="loginType !== 'wechat'" class="login-options">
           <a-checkbox v-model:checked="autoLogin">3天内自动登录</a-checkbox>
           <button type="button">忘记密码?</button>
         </div>
@@ -200,7 +218,7 @@
           :loading="loading"
           @click="toLogin"
         >
-          登录系统
+          {{ loginType === 'wechat' ? '等待扫码确认' : '登录系统' }}
         </a-button>
 
         <div class="login-card__footer">
@@ -243,7 +261,7 @@
 
 <script lang="ts" setup>
   import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-  import { MobileOutlined, LockOutlined, SafetyCertificateOutlined } from '@ant-design/icons-vue';
+  import { MobileOutlined, LockOutlined, SafetyCertificateOutlined, WechatOutlined } from '@ant-design/icons-vue';
   import * as echarts from 'echarts';
   import { useUserStore } from '@/store/modules/user';
   import { useMessage } from '@/hooks/web/useMessage';
@@ -299,7 +317,7 @@
 
   const loading = ref(false);
   const autoLogin = ref(false);
-  const loginType = ref<'password' | 'sms'>('password');
+  const loginType = ref<'password' | 'sms' | 'wechat'>('password');
   const codeSending = ref(false);
   const codeCountdown = ref(0);
   const phoneErrorLocked = ref(false);
@@ -376,6 +394,9 @@
   const canSendCode = computed(() => isPhoneValid.value && codeCountdown.value === 0);
   const codeButtonText = computed(() => (codeCountdown.value > 0 ? `${codeCountdown.value}s 后重发` : '获取验证码'));
   const canSubmit = computed(() => {
+    if (loginType.value === 'wechat') {
+      return true;
+    }
     if (!isPhoneValid.value) return false;
     if (loginType.value === 'password') {
       return Boolean(loginForm.value.password);
@@ -1021,6 +1042,10 @@
   };
 
   const toLogin = async () => {
+    if (loginType.value === 'wechat') {
+      createMessage.info('微信扫码登录接口待接入');
+      return;
+    }
     if (!validateLoginPhone()) return;
     if (loginType.value === 'password' && !loginForm.value.password) {
       createMessage.warning('请输入登录密码');
@@ -2484,7 +2509,7 @@
 
   .login-tabs {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 6px;
     margin: 20px 0 24px;
     padding: 6px;
@@ -2518,6 +2543,114 @@
     display: flex;
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .login-wechat-panel {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 0 28px;
+    padding: 20px 18px 18px;
+    border: 1px solid rgba(10, 90, 255, 0.12);
+    border-radius: 18px;
+    background:
+      linear-gradient(180deg, rgba(249, 251, 253, 0.96), rgba(255, 255, 255, 0.92)),
+      #fff;
+  }
+
+  .login-wechat-qr {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 168px;
+    height: 168px;
+    padding: 12px;
+    border: 1px solid #d8e6ff;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 14px 34px rgba(32, 48, 75, 0.08);
+  }
+
+  .login-wechat-qr__grid {
+    width: 100%;
+    height: 100%;
+    border-radius: 14px;
+    background:
+      linear-gradient(90deg, #1f2b3d 10px, transparent 10px 18px, #1f2b3d 18px 26px, transparent 26px 34px, #1f2b3d 34px 42px, transparent 42px),
+      linear-gradient(#1f2b3d 10px, transparent 10px 18px, #1f2b3d 18px 26px, transparent 26px 34px, #1f2b3d 34px 42px, transparent 42px),
+      repeating-linear-gradient(45deg, rgba(31, 43, 61, 0.9) 0 6px, transparent 6px 12px),
+      #f9fbfd;
+    background-size: 52px 52px, 52px 52px, 18px 18px, auto;
+    opacity: 0.82;
+  }
+
+  .login-wechat-qr__icon {
+    position: absolute;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border: 4px solid #fff;
+    border-radius: 50%;
+    color: #19b36b;
+    font-size: 28px;
+    background: #fff;
+    box-shadow: 0 8px 18px rgba(25, 179, 107, 0.18);
+  }
+
+  .login-wechat-copy {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 16px;
+    text-align: center;
+  }
+
+  .login-wechat-copy strong {
+    color: #1f2944;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 24px;
+  }
+
+  .login-wechat-copy span {
+    color: #6d7590;
+    font-size: 13px;
+    line-height: 20px;
+  }
+
+  .login-wechat-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 16px;
+    padding: 10px 12px;
+    border: 1px dashed #d8e6ff;
+    border-radius: 12px;
+    background: #eef5ff;
+  }
+
+  .login-wechat-status span {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #19b36b;
+    box-shadow: 0 0 0 5px rgba(25, 179, 107, 0.1);
+  }
+
+  .login-wechat-status em {
+    min-width: 0;
+    color: #5f6a7a;
+    font-size: 12px;
+    font-style: normal;
+    line-height: 18px;
   }
 
   :deep(.ant-form-item) {

@@ -5,7 +5,7 @@
 <template>
   <div :class="getAppLogoClass" @click="goHome">
     <img src="../../../assets/images/logo.png" alt="">
-    <div class="ml-8px text-24px text-bold">蒙医云诊室</div>
+    <div class="app-logo-brand ml-8px text-24px">蒙医云诊室</div>
     <!-- <div class="ml-2 truncate md:opacity-100" :class="getTitleClass" v-show="showTitle">
       {{ title }}
     </div> -->
@@ -90,5 +90,9 @@
       font-weight: 700;
       line-height: normal;
     }
+  }
+
+  .app-logo-brand {
+    font-weight: 400;
   }
 </style>
